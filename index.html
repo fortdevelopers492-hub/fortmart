@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fort Mart - Marketplace & Chat</title>
+    <link rel="icon" href="Fort Mart Logo Circle Cropped.png" type="image/png">
+    <link rel="stylesheet" href="fort mart styles.css">
+    <script src="firebase-bridge.js"></script>
+    <script src="firebase-config.js"></script>
+    <script>
+    // ... your firebase config initialization ...
+    
+    // This block manually bundles the CDN methods into the exact global window object your script expects!
+    window.FortMartFirebase = {
+        db: db,
+        storage: storage,
+        collection: (dbRef, path) => db.collection(path),
+        doc: (dbRef, path, id) => id ? db.collection(path).doc(id) : db.doc(path),
+        onSnapshot: (ref, callback) => ref.onSnapshot(callback),
+        setDoc: (docRef, data) => docRef.set(data),
+        updateDoc: (docRef, data) => docRef.update(data)
+    };
+    </script>
+
+    <!-- 1. Load the underlying Firebase Compat CDN engines -->
+    <script src="https://www.gstatic.com/firebasejs/9.20.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.20.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.20.0/firebase-storage-compat.js"></script>
+
+    <!-- 2. The Corrected Global Bridge Config Script -->
+    <script>
+      // Replace these fields with your exact Firebase Web Project Credentials
+    const firebaseConfig = {
+        apiKey: "AIzaSyDYbg-Ywn6KQJLWYjsZcE6q6_AjOX4EUWE",
+        authDomain: "fort-492.firebaseapp.com",
+        projectId: "fort-492",
+        storageBucket: "fort-492.firebasestorage.app",
+        messagingSenderId: "255260729739",
+        appId: "1:255260729739:web:9c20d200b571ec650d0f8e",
+        measurementId: "G-R2L2GTVKNR"
+    };
+
+
+      // Initialize your core instances safely
+      const app = firebase.initializeApp(firebaseConfig);
+      const firestoreDb = firebase.firestore();
+      const storageInstance = firebase.storage();
+
+      // This bridge translates modern-looking function calls into valid Compat actions
+      window.FortMartFirebase = {
+        db: firestoreDb,
+        storage: storageInstance,
+        
+        // Correctly handles collection(db, "items")
+        collection: (dbRef, path) => {
+          return firestoreDb.collection(path);
+        },
+        
+        // Correctly handles doc(db, "items", id) OR doc(collectionRef, id)
+        doc: (parentRef, pathOrId, optionalId) => {
+          if (optionalId) {
+            return firestoreDb.collection(pathOrId).doc(optionalId);
+          }
+          // If the first argument passed is actually a collection reference object
+          if (typeof parentRef.doc === 'function') {
+            return parentRef.doc(pathOrId);
+          }
+          return firestoreDb.doc(pathOrId);
+        },
+        
+        // Correctly handles onSnapshot(reference, callback)
+        onSnapshot: (ref, callback) => {
+          return ref.onSnapshot(callback);
+        },
+        
+        // Correctly handles setDoc(docRef, data)
+        setDoc: (docRef, data) => {
+          return docRef.set(data);
+        },
+        
+        // Correctly handles updateDoc(docRef, data)
+        updateDoc: (docRef, data) => {
+          return docRef.update(data);
+        }
+      };
+
+      console.log("Fort Mart Global Firebase bridge translation layer is ready!");
+    </script>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="text/javascript">
+    (function(){
+        // Initialize with your production EmailJS Public Key API configuration
+        emailjs.init({
+            publicKey: "BIkzBsPuCKiv2Wqxu",
+        });
+    })();
+    </script>
+
+    <!-- 3. Finally load your main logic file -->
+    <script src="Fort Mart script.js"></script>
+    
+</head>
+<body class="mode-laptop">
+
+    <!-- Universal Custom Modal Alert Hook Target Box Container Context Matrix Grid Element -->
+    <div id="alert-modal-hook-element" class="modal-overlay">
+        <div class="modal-box rounded-rect text-center">
+            <h3 id="alert-modal-title-text-node">Application Prompt</h3>
+            <p id="alert-modal-body-text-node" class="margin-top-sm" style="color: var(--fort-blue-dark); font-size: 0.95rem; line-height: 1.4;"></p>
+            <button id="alert-modal-close-trigger-btn" class="btn-blue margin-top-md" style="min-width: 100px;">Close</button>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal-box rounded-rect">
+            <h3>Are you sure?</h3>
+            <p id="confirm-modal-text">Unsaved changes may be discarded.</p>
+            <div class="btn-group">
+                <button id="confirm-yes-btn" class="btn-blue">Yes, Proceed</button>
+                <button id="confirm-no-btn" class="btn-gray">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="welcome-modal" class="modal-overlay">
+        <div class="modal-box rounded-rect text-center">
+            <h2>Welcome to Fort Mart!</h2>
+            <p><strong>Your one-stop shop for everything.</strong></p>
+            <br>
+            <button onclick="closeActiveModalDirectly('welcome-modal')" class="btn-blue">Start Exploring</button>
+        </div>
+    </div>
+
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-box rounded-rect" id="auth-modal-content"></div>
+    </div>
+
+    <!-- AdSense Interstitial Monetization Layout Frame Block Overlay Container Segment Element Node Matrix -->
+    <div id="adsense-full-page-interstitial-block" class="modal-overlay" style="background-color: rgba(255,255,255,0.98); z-index: 99999;">
+        <div class="modal-box rounded-rect text-center" style="max-width: 700px; padding: 40px; box-shadow: none; border: 2px dashed #cbd5e0;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px;">Advertisement Sponsored via Google AdSense Programmatic Platform Channel</div>
+            <div style="width: 100%; height: 280px; background-color: #f7fafc; border-radius: 6px; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0;">
+                <p style="font-size: 1.1rem; color: #4a5568; font-weight: 500;">Dynamic Contextual High-Yield Interstitial Digital Banner Framework Slot [ID: #AD_FULL_PAGE_SURFACE_GRID]</p>
+            </div>
+            <button onclick="closeActiveModalDirectly('adsense-full-page-interstitial-block')" class="btn-blue margin-top-lg" style="padding: 10px 30px;">Skip Advertisement & Continue</button>
+        </div>
+    </div>
+
+    <div id="user-profile-summary-modal" class="modal-overlay">
+        <div class="modal-box rounded-rect" id="user-profile-summary-modal-body" style="max-width: 600px;"></div>
+    </div>
+
+    <div class="app-container">
+        
+        <header id="top-navbar" class="top-nav-bar bg-blue">
+            <button class="nav-toggle-btn" onclick="toggleSideDrawer()">☰</button>
+            <div class="search-container">
+                <input type="text" id="global-search-bar" placeholder="Search Products……" oninput="handleGlobalSearch(this.value)">
+            </div>
+            <div class="nav-right-actions">
+                <div class="profile-avatar-trigger" onclick="navigateToPage('my-account')">
+                    <img id="nav-user-avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>" alt="User Profile">
+                </div>
+            </div>
+        </header>
+
+        <div class="main-workspace">
+            
+            <nav id="side-drawer" class="side-drawer-menu">
+                <div class="drawer-header-pane-card rounded-rect">
+                    <img id="drawer-user-avatar-frame-node" src="Fort Mart Logo Circle Cropped.png" alt="document.getElementById("drawer-user-avatar)">
+                    <div style="overflow: hidden;">
+                        <h4 id="drawer-user-identity-fullname-lbl" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--fort-blue-dark); font-weight: 700;">Guest Terminal Node</h4>
+                        <span id="drawer-user-classification-badge-lbl" class="profile-mode-tag-label personal">Offline Sandbox Mode</span>
+                    </div>
+                </div>
+                <ul class="drawer-links">
+                    <li id="nav-item-home" onclick="navigateToPage('home')">🏠 Home (Products)</li>
+                    <li id="nav-item-messages" onclick="navigateToPage('messages')">💬 Messages</li>
+                    <li id="nav-item-my-account" onclick="navigateToPage('my-account')">⚙️ My Account Settings</li>
+                    <li id="admin-nav-item" class="hidden-admin-node" onclick="navigateToPage('admin-dashboard')">🛡️ Admin Dashboard</li>
+                    <br>
+                    <button onclick="toggleSideDrawer()" class="btn-gray">Close</button>
+                </ul>
+            </nav>
+
+            <main id="view-port" class="content-view-port scrollable-container">
+                
+                <section id="page-home" class="view-page active-view">
+                    <div id="category-ribbon" class="categories-bar-wrapper">
+                        <button class="category-toggle" onclick="toggleCategoryDrawer()">Browse Categories ▼</button>
+                        <div id="category-items-container" class="category-items-grid hidden"></div>
+                    </div>
+                    
+                    <div id="active-category-header" class="hidden">
+                        <h2 id="category-title-text">Category</h2>
+                        <input type="text" id="category-specific-search" placeholder="Search within category..." oninput="handleCategorySearch(this.value)">
+                    </div>
+
+                    <div id="products-display-grid" class="products-master-grid"></div>
+                    <div><button id="floating-action-creation-btn" class="floating-action-plus-button-node" onclick="handleFloatingActionButtonTrigger()">+</button></div>
+                </section>
+
+                <section id="page-messages" class="view-page hidden-view">
+                    <div class="messages-split-layout">
+                        <div id="chat-roster-pane" class="chat-roster-container rounded-rect">
+                            <div class="pane-header">
+                                <h3>Conversations Log</h3>
+                            </div>
+                            <div id="chat-threads-target-list"></div>
+                        </div>
+                        <div id="chat-conversation-pane" class="chat-conversation-workspace rounded-rect">
+                            <div id="chat-pane-empty-notice" class="empty-placeholder">
+                                <p>Select a running dialogue thread to view context history or launch messaging windows.</p>
+                            </div>
+                            <div id="chat-pane-active-view" class="active-conversation-grid">
+                                <div id="chat-window-top-toolbar" class="chat-context-sub-bar"></div>
+                                <div id="chat-bubble-stream-area" class="message-stream-scroller scrollable-container"></div>
+                                
+                                <div id="chat-multi-select-actions-subbar" class="message-action-overlay-bar hidden-node">
+                                    <div id="chat-selection-count-lbl" style="font-weight: 700; font-size: 0.85rem;">0 Items Highlighted</div>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button onclick="executeSelectedMessagesTextCopy()" class="btn-sm-pencil" style="background-color: #ebf8ff; color: #2b6cb0;">📋 Copy</button>
+                                        <button onclick="triggerSelectedMessagesDeletionSequence()" class="btn-sm-pencil" style="background-color: #fed7d7; color: #9b2c2c;">🗑️ Delete</button>
+                                        <button onclick="clearMessagesSelectionContextTracker()" class="btn-sm-pencil" style="background-color: #edf2f7; color: #4a5568;">Cancel</button>
+                                    </div>
+                                </div>
+                                
+                                <div id="chat-input-row-bar-container" class="chat-input-row-bar">
+                                    <button class="attachment-btn" onclick="triggerMessageAttachedFileBrowserLink()">📎</button>
+                                    <input type="file" id="chat-message-file-attachment-input" class="hidden" onchange="handleMessageAttachedFileSelectionEvent(this)">
+                                    
+                                    <input type="text" id="chat-text-input-field" class="rounded-rect" placeholder="Type a message...">
+                                    <button onclick="sendChatMessageDirect()" class="btn-blue">Send</button>
+                                </div>
+                                <div id="chat-input-row-bar-blocked-notice" class="hidden-node text-center" style="background-color: #f7fafc; padding: 14px; border-top: 1px solid #e2e8f0; font-size: 0.85rem; font-style: italic; color: #a0aec0; font-weight: 600;">
+                                    ⚠️ Incoming broadcast automated terminal node: System administration configurations prohibit text logs input responses.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="page-my-account" class="view-page hidden-view">
+                    <div class="settings-control-grid">
+                        <div class="settings-tabs-topbar">
+                            <button class="settings-tab-btn active" onclick="switchSettingsSection('account-info')">Profile Information</button>
+                            <button class="settings-tab-btn" onclick="switchSettingsSection('my-products')">Manage Posted Products</button>
+                            <button class="settings-tab-btn" onclick="switchSettingsSection('ratings-reviews')">Ratings & Platform Reviews</button>
+                            <button class="settings-tab-btn" onclick="switchSettingsSection('more-from-fort')">More from Fort Developers</button>
+                        </div>
+
+                        <div class="settings-content-pane rounded-rect scrollable-container">
+                            
+                            <div id="settings-node-account-info" class="settings-sub-panel">
+                                <div class="settings-section-container rounded-rect">
+                                    <h2>Account Information Profile</h2>
+                                    <div class="profile-photo-center-block text-center">
+                                        <div class="large-avatar-frame circle-container" onclick="openProfileEditWizard('avatar')">
+                                            <img id="profile-pane-avatar-display" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230288d1'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>" alt="Account Avatar">
+                                            <div class="pencil-overlay-icon">📷</div>
+                                        </div>
+                                    </div>
+                                    <div class="profile-details-list">
+                                        <div class="detail-row-item">
+                                            <label>Identity Name:</label>
+                                            <div class="editable-field-row">
+                                                <span id="txt-profile-username-val" class="bold-text">Loading User...</span>
+                                                <button class="btn-sm-pencil" onclick="openProfileEditWizard('username')">✏️</button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div id="personal-profile-only-fields" class="hidden-node">
+                                            <div class="detail-row-item border-top-divider" style="padding-top: 16px;">
+                                                <label>Profile Scale / Commercial Infrastructure Expansion:</label>
+                                                <p style="font-size: 0.8rem; color: #718096; margin-bottom: 8px;">Upgrade this consumer node to an enterprise corporate tier to unlock localized marketplace product posting registries privileges.</p>
+                                                <button class="btn-blue" style="background-color: #2b6cb0; width: auto; font-size: 0.85rem;" onclick="triggerPersonalToBusinessUpgradeFlowStepOne()">🚀 Convert Account to Business Tier Profile</button>
+                                            </div>
+                                        </div>
+
+                                        <div id="business-profile-only-fields" class="hidden-node">
+                                            <div class="detail-row-item">
+                                                <label>Corporate Business Entity Name:</label>
+                                                <div class="editable-field-row">
+                                                    <span id="txt-profile-busname-val" class="bold-text">N/A</span>
+                                                    <button class="btn-sm-pencil" onclick="openProfileEditWizard('businessName')">✏️</button>
+                                                </div>
+                                            </div>
+                                            <div class="detail-row-item">
+                                                <label>Public Professional Bio / Summary Note:</label>
+                                                <div class="editable-field-row">
+                                                    <span id="txt-profile-businfo-val">N/A</span>
+                                                    <button class="btn-sm-pencil" onclick="openProfileEditWizard('businessInfo')">✏️</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="detail-row-item border-top-divider btn-group" style="margin-top: 20px; padding-top: 16px; justify-content: space-between;">
+                                            <button class="btn-gray" onclick="openProfileEditWizard('password')">🔒 Change Account Security Password</button>
+                                            <button onclick="openLogoutConfirmationModal()" class="btn-danger">Logout</button>                                        
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="settings-node-my-products" class="settings-sub-panel hidden-node">
+                                <div class="settings-section-container rounded-rect">
+                                    <h2>Your System Postings Ledger</h2>
+                                    <div id="my-products-list-container" class="dashboard-products-listing-stack"></div>
+                                </div>
+                            </div>
+
+                            <div id="settings-node-chat-settings" class="settings-sub-panel hidden-node">
+                                <div class="settings-section-container rounded-rect">
+                                    <h2>Messenger Infrastructure Configurations</h2>
+                                    <div class="form-checkbox-group-row">
+                                        <input type="checkbox" id="chk-cfg-notifications" onchange="updateChatConfigurationState()">
+                                        <label for="chk-cfg-notifications">Enable Local Browser Native Service Notifications</label>
+                                    </div>
+                                    <div class="form-checkbox-group-row margin-top-sm">
+                                        <input type="checkbox" id="chk-cfg-autoreply" onchange="toggleAutoReplyTextInputNode(this.checked)">
+                                        <label for="chk-cfg-autoreply">Enable Instantaneous Incoming Auto-Reply Gateway</label>
+                                    </div>
+                                    <div id="autoreply-text-input-node" class="hidden-node margin-top-xs">
+                                        <label>Define Auto-Reply Content String Expression:</label>
+                                        <textarea id="txt-cfg-autoreply-message" class="rounded-rect form-text-area" placeholder="Thank you for contacting us. We will evaluate your query and message you shortly." oninput="updateChatConfigurationState()"></textarea>
+                                    </div>
+                                    <div class="form-checkbox-group-row margin-top-sm">
+                                        <input type="checkbox" id="chk-cfg-autodownload" onchange="updateChatConfigurationState()">
+                                        <label for="chk-cfg-autodownload">Enable Media File Downloader Automations to Local Storage Device</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="settings-node-ratings-reviews" class="settings-sub-panel hidden-node">
+                                <div class="settings-section-container rounded-rect">
+                                    <h2>Platform Experience Performance Evaluation</h2>
+                                    <hr>
+                                    <p>For ratings contact our customer care channels.</p>
+                                    <br>
+                                    <button class="btn-blue" onclick="switchSettingsSection('more-from-fort')">View Customer Care Lines</button>
+                                </div>
+                            </div>
+
+                            <div id="settings-node-more-from-fort" class="settings-sub-panel hidden-node">
+                                <div class="settings-section-container rounded-rect">
+                                    <h2>Official Developer Contact Access Ports</h2>
+                                    <div class="suite-extensions-vertical-stack" style="margin-bottom:25px;">
+                                        <div class="suite-extension-row-card rounded-rect" style="display:flex; align-items:center; gap:15px; padding:15px; background:#fdfdfd;">
+                                            <span style="font-size:1.5rem; color:#25D366;"><i class="fa-brands fa-whatsapp"></i></span>
+                                            <div>
+                                                <strong>WhatsApp Corporate Node:</strong><br>
+                                                <a href="https://wa.me/2348028241162" target="_blank" style="color:var(--fort-blue-light); text-decoration:none; font-weight:700;">+2348028241162</a>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <a href="https://wa.me/2348028241162" target="_blank" style="text-decoration: none;">
+                                                <button class="btn-blue">  💬 Chat on WhatsApp</button>
+                                            </a>
+                                        </div>
+                                        <div class="suite-extension-row-card rounded-rect" style="display:flex; align-items:center; gap:15px; padding:15px; background:#fdfdfd;">
+                                            <span style="font-size:1.5rem; color:#EA4335;"><i class="fa-solid fa-envelope"></i></span>
+                                            <div>
+                                                <strong>E-Mail Support Gateway:</strong><br>
+                                                <a href="mailto:fortdevelopers492@gmail.com" style="color:var(--fort-blue-light); text-decoration:none; font-weight:700;">fortdevelopers492@gmail.com</a>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <a href="mailto:fortdevelopers492@gmail.com" style="text-decoration: none;">
+                                                <button class="btn-blue">📩 Email Us</button>
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <h2>Explore Alternative Product Offerings from Fort Developers</h2>
+                                    <hr>
+                                    <br>
+                                    <div id="suite-extensions-display-grid" class="suite-extensions-vertical-stack">
+                                        <div id="dynamic-websites-container-fortdev">
+                                            <div class="section-content-wrapper-fortdev website-section-layout">
+                                                <div class="website-meta-side">
+                                                    <div class="large-avatar-frame-fortdev rounded-rect">
+                                                        <img src="fort logo.png" alt="Fort Mart Logo">
+                                                    </div>
+                                                    <div class="website-info-block-fortdev">
+                                                        <div class="header-inline-edit-row-fortdev">
+                                                            <h3 id="fm-title-text">Fort Developers</h3>
+                                                        </div>
+                                                        <p id="fm-info-text" class="margin-top-xs">The main webpage of fort developers, which shows all about fort developers and includes their "about us" document.</p>
+                                                    </div>
+                                                </div>
+                                                <div class="margin-top-md">
+                                                    <button class="btn-blue" onclick="window.open('https://fortdevelopers492-hub.github.io/fort/index.html', '_blank')">Visit Website</button>
+                                                </div>                    
+                                            </div>
+                                        </div>
+                                        <br>
+                                        <div id="dynamic-websites-container-fortdev">
+                                            <div class="section-content-wrapper-fortdev website-section-layout">
+                                                <div class="website-meta-side">
+                                                    <div class="large-avatar-frame-fortdev rounded-rect">
+                                                        <img src="fort logo.png" alt="Fort Logo">
+                                                    </div>
+                                                    <div class="website-info-block-fortdev">
+                                                        <div class="header-inline-edit-row-fortdev">
+                                                            <h3 id="fm-title-text">Fort || Website Builder Wizard</h3>
+                                                        </div>
+                                                        <p id="fm-info-text" class="margin-top-xs">A website made particularly for communicating your desired website features and layouts to fort developers. Here you type all your info and send to fort developers for it to be created by them.</p>
+                                                    </div>
+                                                </div>
+                                                <div class="margin-top-md">
+                                                    <button class="btn-blue" onclick="window.open('https://fortdevelopers492-hub.github.io/createawebsite-fort/', '_blank')">Visit Website</button>
+                                                </div>                    
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>%
+                </section>
+
+                <section id="page-admin-dashboard" class="view-page hidden-view">
+                    <h2>System Administration Analytical Metric Dashboard Control Matrix</h2>
+                    
+                    <div class="metrics-statistical-summary-grid margin-top-md">
+                        <div class="metric-card-box rounded-rect">
+                            <h4>Total Registered Members Registry</h4>
+                            <p class="metric-numeric-callout" id="lbl-metric-total-users-count">0 Users</p>
+                        </div>
+                        <div class="metric-card-box rounded-rect">
+                            <h4>Active Catalog Product Nodes</h4>
+                            <p class="metric-numeric-callout" id="lbl-metric-total-products-count">0 Items</p>
+                        </div>
+                        <div class="metric-card-box rounded-rect">
+                            <h4>Authorized Account Manager Tier Token</h4>
+                            <p class="metric-numeric-callout" style="font-size:1.1rem; color:var(--fort-blue-light);">Fort Mart Account Manager</p>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section-container rounded-rect margin-top-lg" style="background:#fff;">
+                        <h3>Core Client Profiles Registry Log Control</h3>
+                        <div class="margin-top-sm" style="display:flex; gap:10px;">
+                            <input type="text" id="admin-user-search-bar" class="form-field-control" placeholder="Search accounts by identification strings, email, role statuses, tiers..." oninput="renderAdminUsersManagementList()" style="flex:1;">
+                        </div>
+                        <div id="admin-users-list-container" class="dashboard-products-listing-stack margin-top-md" style="max-height:400px; overflow-y:auto; display:flex; flex-direction:column; gap:10px;">
+                        </div>
+                    </div>
+    
+                </section>
+
+            </main>
+        </div>
+
+    </div>
+
+    <div id="product-detail-modal" class="modal-overlay">
+        <div class="modal-box-expanded rounded-rect scrollable-container" id="product-detail-modal-body"></div>
+    </div>
+
+    <div id="logout-confirm-modal" class="modal-overlay">
+        <div class="modal-box rounded-rect" id="logout-modal-content">
+            <h2>Confirm Account Logout</h2>
+            <p style="font-size: 1rem; color: #555; margin-bottom: 15px;">
+                For security reasons, please enter your password to confirm logging out of this device.
+            </p>
+            
+            <div class="form-input-container">
+                <label>Account Password:</label>
+                <input type="password" id="logout-auth-password" class="form-field-control" placeholder="Enter your current password">
+                <div id="err-logout-password" class="text-danger-alert hidden-node"></div>
+            </div>
+
+            <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+                <input type="checkbox" id="chk-logout-showpass" onchange="toggleFormPasswordFieldVisibility(this, 'logout-auth-password')">
+                <label for="chk-logout-showpass" style="font-size: 0.8rem; font-weight: 400; cursor: pointer; user-select: none;">Show Password</label>
+            </div>
+
+            <div class="btn-group" style="margin-top: 20px;">
+                <button onclick="closeActiveModalDirectly('logout-confirm-modal')" class="btn-gray">Cancel</button>
+                <button onclick="executeSecureAccountLogout()" class="btn-danger">Confirm Logout</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
