@@ -271,8 +271,6 @@ body {
 .editable-field-row { display: flex; align-items: center; justify-content: space-between; background-color: var(--fort-white-snow); padding: 10px 14px; border: 1px solid var(--fort-gray-border); border-radius: 6px; }
 
 /* Messenger Realtime Workspace Visual Pipeline Interface Layout Specifications */
-.messages-split-layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; height: 100%; }
-.chat-roster-container { background-color: var(--fort-white-pure); display: flex; flex-direction: column; overflow: hidden; height: 100%; }
 .pane-header { padding: 16px; border-bottom: 1px solid var(--fort-gray-border); background-color: var(--fort-white-snow); }
 .pane-header h3 { font-size: 1rem; font-weight: 800; color: var(--fort-blue-primary); text-transform: uppercase; letter-spacing: 0.5px; }
 #chat-threads-target-list { flex: 1; overflow-y: auto; }
@@ -280,7 +278,6 @@ body {
 .chat-thread-roster-row:hover { background-color: var(--fort-gray-bg); }
 .chat-thread-roster-row.active { background-color: #e3f2fd; border-left: 4px solid var(--fort-blue-light); }
 
-.chat-conversation-workspace { background-color: var(--fort-white-pure); display: flex; flex-direction: column; overflow: hidden; height: 100%; position: relative; }
 .empty-placeholder { display: flex; align-items: center; justify-content: center; height: 100%; padding: 40px; text-align: center; color: var(--fort-gray-slate); font-size: 0.92rem; }
 .active-conversation-grid { display: flex; flex-direction: column; height: 100%; width: 100%; position: relative; }
 .chat-context-sub-bar { height: 54px; border-bottom: 1px solid var(--fort-gray-border); display: flex; align-items: center; }
@@ -740,5 +737,272 @@ body {
 @media (max-width: 768px) {
     .navbar {
         height: 55px; /* Or whatever height you want for mobile */
+    }
+}
+
+/* ==========================================================================
+   Desktop & Large Screens (Side-by-Side Grid Layout)
+   ========================================================================== */
+.messages-split-layout { 
+    display: grid;
+    grid-template-columns: 320px 1fr; 
+    gap: 20px; 
+    height: 100%;
+    position: relative;
+}
+
+.chat-roster-container {
+    background-color: var(--fort-white-pure);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 100%;
+}
+
+/* Explicit layout assignment matching your active DOM workspace container ID */
+#chat-conversation-pane { 
+    background-color: var(--fort-white-pure); 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+    height: 100%; 
+    position: relative; 
+}
+
+
+/* ==========================================================================
+   Mobile Phone Layout (Overlapping Target Pane Architecture)
+   ========================================================================== */
+@media (max-width: 768px) {
+    
+    /* Collapses the side-by-side grid structure to a single responsive container stack */
+    .messages-split-layout { 
+        grid-template-columns: 1fr; 
+        position: relative; 
+        height: 100%;
+    }
+
+    /* Sets the active window pane to float over and mask the behind roster list */
+    #chat-conversation-pane {
+        position: absolute; 
+        top: 0; 
+        left: 0; 
+        width: 100%; 
+        height: 100%; 
+        display: none; /* Kept completely hidden until an active chat row is triggered */
+        z-index: 60; 
+        background-color: var(--fort-white-pure); 
+    }
+
+    /* Target state class toggled by your JavaScript state engine to display the pane */
+    #chat-conversation-pane.phone-active-thread { 
+        display: flex !important; 
+    }
+    
+    /* Normalizes inner toolbar structural paddings across smaller viewports */
+    .chat-context-sub-bar {
+        padding: 0 10px;
+    }
+}
+
+
+/* ==========================================================================
+   Product Expanded View Mobile Media Queries (Strict Top Stacking)
+   ========================================================================== */
+@media (max-width: 768px) {
+    /* 1. Turn the main parent container into a flat vertical stack */
+    .modal-expanded-content-split-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+
+    /* 2. Force the right details column to behave like a normal contents wrapper */
+    .expanded-right-details-column {
+        display: flex !important;
+        flex-direction: column !important;
+        display: contents !important; /* Breaks the inner elements out so they can sort globally */
+    }
+
+    /* 3. Re-assign order values globally across all child blocks */
+    
+    /* User / Vendor Profile Box goes to position 1 (Top) */
+    .expanded-right-details-column > div:first-child {
+        order: 1 !important;
+    }
+
+    /* Left Visuals Column containing the Product Image goes directly underneath User Info */
+    .expanded-left-visuals-column {
+        order: 2 !important;
+        width: 100% !important;
+        margin: 4px 0 !important;
+    }
+
+    /* Force the image wrapper to scale perfectly into a responsive square width */
+    .expanded-master-image-box {
+        width: 100% !important;
+        height: auto !important; 
+        aspect-ratio: 1 / 1 !important; 
+        max-width: 320px !important; 
+        margin: 0 auto !important; 
+    }
+
+    /* Product Title Heading */
+    .expanded-right-details-column > h2 {
+        order: 3 !important;
+        margin-top: 6px !important;
+    }
+
+    /* Product Pricing Label */
+    .expanded-right-details-column > div:nth-child(3) {
+        order: 4 !important;
+    }
+
+    /* Primary Description & AI Specification Blocks */
+    .expanded-right-details-column > .spec-note-paragraph-block {
+        order: 5 !important;
+    }
+
+    /* Action Footer Buttons (Message Seller or Manage Post) */
+    .modal-expanded-actions-footer-row {
+        order: 6 !important;
+        padding-top: 14px !important;
+        margin-top: 10px !important;
+    }
+
+    /* Admin Pin/Leaderboard Control panel forced to the absolute bottom of the viewport */
+    .expanded-right-details-column > div[style*="border: 1px dashed"] {
+        order: 7 !important;
+        margin-top: 14px !important;
+        margin-bottom: 0 !important;
+    }
+}
+
+/* ==========================================================================
+   Product Expanded View Mobile Media Queries (Vertical Square Stacking)
+   ========================================================================== */
+@media (max-width: 768px) {
+    /* 1. Turn the parent grid into a single-column vertical flex container */
+    .modal-expanded-content-split-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+
+    /* 2. Break down the details column structural wrapper so its items can sort globally */
+    .expanded-right-details-column {
+        display: contents !important; 
+    }
+
+    /* ==========================================================================
+       GLOBAL ORDERING ARRAY FOR ELEMENT STACKING
+       ========================================================================== */
+
+    /* [POSITION 1] User / Vendor Profile Info Box at the very top */
+    .expanded-right-details-column > div:first-child {
+        order: 1 !important;
+    }
+
+    /* [POSITION 2] Product Image Column sits vertically right under User Info */
+    .expanded-left-visuals-column {
+        order: 2 !important;
+        width: 100% !important;
+        margin: 4px 0 !important;
+    }
+
+    /* Force the image container to scale responsively based on screen width while keeping a square ratio */
+    .expanded-master-image-box {
+        width: 100% !important;
+        height: auto !important; 
+        aspect-ratio: 1 / 1 !important; /* Guarantees a perfect square ratio */
+        max-width: 340px !important; /* Prevents it from getting too large on tablet widths */
+        margin: 0 auto !important; /* Centers the square image nicely if needed */
+    }
+
+    /* [POSITION 3] Product Title Heading */
+    .expanded-right-details-column > h2 {
+        order: 3 !important;
+        margin-top: 8px !important;
+    }
+
+    /* [POSITION 4] Product Pricing Display */
+    .expanded-right-details-column > div:nth-child(3) {
+        order: 4 !important;
+    }
+
+    /* [POSITION 5] Descriptions & Metadata Specifications Box Blocks */
+    .expanded-right-details-column > .spec-note-paragraph-block {
+        order: 5 !important;
+    }
+
+    /* [POSITION 6] Action Footer Buttons (Message Seller or Manage Inventory Details) */
+    .modal-expanded-actions-footer-row {
+        order: 6 !important;
+        padding-top: 14px !important;
+        margin-top: 8px !important;
+    }
+
+    /* [POSITION 7] Admin Pin & Leaderboard Controls Panel forced to the absolute bottom */
+    .expanded-right-details-column > div[style*="border: 1px dashed"] {
+        order: 7 !important;
+        margin-top: 14px !important;
+        margin-bottom: 0 !important;
+    }
+}
+
+/* ==========================================================================
+   "15. Settings Css Queries.txt" - Horizontal Tabs Scroll Query
+   ========================================================================== */
+@media (max-width: 768px) {
+    /* Force the main settings grid layout into a vertical stacking sequence */
+    .settings-control-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 16px !important;
+    }
+
+    /* Force all tab buttons onto a single, non-wrapping horizontal line */
+    .settings-tabs-topbar {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        
+        /* Enable smooth hardware-accelerated horizontal touch scrolling */
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        
+        /* Layout spacing adjustments */
+        width: 100% !important;
+        padding: 8px 4px !important;
+        gap: 8px !important;
+        
+        /* Snaps buttons to grid tracking points while scrolling */
+        scroll-snap-type: x mandatory !important;
+    }
+
+    /* Ensure buttons maintain structural sizing integrity instead of shrinking */
+    .settings-tab-btn {
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+        scroll-snap-align: start !important;
+        padding: 8px 16px !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* Optional: Style a clean, visible horizontal scroll bar track to help direct user focus */
+    .settings-tabs-topbar::-webkit-scrollbar {
+        height: 5px !important;
+    }
+    
+    .settings-tabs-topbar::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05) !important;
+        border-radius: 10px !important;
+    }
+    
+    .settings-tabs-topbar::-webkit-scrollbar-thumb {
+        background: var(--fort-blue-light, #3182ce) !important;
+        border-radius: 10px !important;
     }
 }

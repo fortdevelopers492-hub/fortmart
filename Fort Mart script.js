@@ -305,33 +305,24 @@ function navigateToPage(targetPageId) {
  */
 function displayConfirmationModalOverlayAction(messageStringText, callbackFunctionReference) {
     const confirmModalNode = document.getElementById("confirm-modal");
-    if (!confirmModalNode) return;
-    
-    const textContainer = document.getElementById("confirm-modal-text");
-    if (textContainer) textContainer.innerText = messageStringText;
-    
+    document.getElementById("confirm-modal-text").innerText = messageStringText;
     confirmModalNode.classList.add("active");
     
     const yesButtonNode = document.getElementById("confirm-yes-btn");
     const noButtonNode = document.getElementById("confirm-no-btn");
-    
-    if (yesButtonNode && noButtonNode) {
-        // Unbind prior event listeners safely to prevent memory leak stack execution duplicates
-        const cleanYesNode = yesButtonNode.cloneNode(true);
-        const cleanNoNode = noButtonNode.cloneNode(true);
-        yesButtonNode.parentNode.replaceChild(cleanYesNode, yesButtonNode);
-        noButtonNode.parentNode.replaceChild(cleanNoNode, noButtonNode);
-        
-        cleanYesNode.addEventListener("click", () => {
-            confirmModalNode.classList.remove("active");
-            if (typeof callbackFunctionReference === "function") {
-                callbackFunctionReference();
-            }
-        });
-        cleanNoNode.addEventListener("click", () => {
-            confirmModalNode.classList.remove("active");
-        });
-    }
+
+    const cleanYesNode = yesButtonNode.cloneNode(true);
+    const cleanNoNode = noButtonNode.cloneNode(true);
+    yesButtonNode.parentNode.replaceChild(cleanYesNode, yesButtonNode);
+    noButtonNode.parentNode.replaceChild(cleanNoNode, noButtonNode);
+
+    cleanYesNode.addEventListener("click", () => {
+        confirmModalNode.classList.remove("active");
+        callbackFunctionReference();
+    });
+    cleanNoNode.addEventListener("click", () => {
+        confirmModalNode.classList.remove("active");
+    });
 }
 
 // 1. Closes the main modal directly
@@ -469,18 +460,19 @@ function renderSignInModalStepContentLayout() {
         <div class="form-input-container">
             <label>Account Password:</label>
             <input type="password" id="auth-signin-password" class="form-field-control" placeholder="Enter password">
-            <div id="err-signin-password" class="text-danger-alert hidden-node" style="color: red; font-size: 0.8rem; margin-top: 4px;"></div>
-            
-            <div class="margin-top-xs">
-                <input type="checkbox" id="chk-signin-showpass" onchange="toggleFormPasswordFieldVisibility(this, 'auth-signin-password')">
-                <label for="chk-signin-showpass" style="font-size:0.85rem; font-weight:400;">Show Password</label>
-            </div>
-            
-            <div class="margin-top-xs">
-                <input type="checkbox" id="chk-signin-rememberme">
-                <label for="chk-signin-rememberme" style="font-size:0.85rem; font-weight:400;">Remember Me</label>
-            </div>
+            <div id="err-signin-password" class="text-danger-alert hidden-node" style="color: red; font-size: 0.8rem; margin-top: 4px;"></div>            
         </div>
+
+        <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+            <input type="checkbox" id="chk-signin-showpass" onchange="toggleFormPasswordFieldVisibility(this, 'auth-signin-password')">
+            <label for="chk-signin-showpass" style="font-size: 0.8rem; font-weight: 400; cursor: pointer; user-select: none;">Show Password</label>            
+        </div>
+
+        <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+            <input type="checkbox" id="chk-signin-rememberme">
+            <label for="chk-signin-rememberme" style="font-size: 0.8rem; font-weight: 400; cursor: pointer; user-select: none;">Remember Me</label>            
+        </div>
+
         <div class="text-center margin-top-xs">
             <span style="color:var(--fort-blue-light); cursor:pointer; font-size:0.9rem;" onclick="renderForgotPasswordModalWorkflow()">Forgot Password?</span>
         </div>
@@ -880,10 +872,11 @@ function renderSignUpModalWizardStepThree() {
             <label>Re-type Password to Confirm:</label>
             <input type="password" id="reg-password-2" class="form-field-control" placeholder="Confirm Password">
             <div id="err-reg-step3-validation-msg" class="text-danger-alert hidden-node" style="color: red; font-size: 0.8rem; margin-top: 4px;"></div>
-            <div class="margin-top-xs">
-                <input type="checkbox" id="chk-reg-showpass" onchange="toggleFormPasswordVisibilityChainSignUp()">
-                <label for="chk-reg-showpass" style="font-size:0.85rem; font-weight:400;">Show Passwords</label>
-            </div>
+        </div>
+
+        <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+            <input type="checkbox" id="chk-reg-showpass" onchange="toggleFormPasswordVisibilityChainSignUp()">
+            <label for="chk-reg-showpass" style="font-size: 0.8rem; font-weight: 400; cursor: pointer; user-select: none;">Show Passwords</label>            
         </div>
 
         <div class="btn-group margin-top-md">
@@ -1028,12 +1021,12 @@ function initiateSignUpOtpResendCooldown() {
         const resendLinkNode = document.getElementById("signup-otp-resend-link");
         if (resendLinkNode) {
             if (SIGNUP_WIZARD_TEMPORARY_OBJECT.signUpOtpSecondsLeft > 0) {
-                resendLinkNode.innerText = `resend in ${SIGNUP_WIZARD_TEMPORARY_OBJECT.signUpOtpSecondsLeft}s`;
+                resendLinkNode.innerText = `Resend in ${SIGNUP_WIZARD_TEMPORARY_OBJECT.signUpOtpSecondsLeft}s`;
                 resendLinkNode.style.opacity = "0.5";
                 resendLinkNode.style.fontWeight = "400";
                 resendLinkNode.style.pointerEvents = "none";
             } else {
-                resendLinkNode.innerText = "resend";
+                resendLinkNode.innerText = "Resend";
                 resendLinkNode.style.opacity = "1";
                 resendLinkNode.style.fontWeight = "600";
                 resendLinkNode.style.pointerEvents = "auto";
@@ -1062,7 +1055,7 @@ function renderSignUpModalWizardStepFour() {
     const maskedTargetEmail = SIGNUP_WIZARD_TEMPORARY_OBJECT.identifierText;
     
     const secondsLeft = SIGNUP_WIZARD_TEMPORARY_OBJECT.signUpOtpSecondsLeft || 0;
-    const textLabel = secondsLeft > 0 ? `resend in ${secondsLeft}s` : "resend";
+    const textLabel = secondsLeft > 0 ? `Resend in ${secondsLeft}s` : "resend";
     const opacityStyle = secondsLeft > 0 ? "0.5" : "1";
     const weightStyle = secondsLeft > 0 ? "400" : "600";
     const pointerEventsStyle = secondsLeft > 0 ? "none" : "auto";
@@ -1350,12 +1343,12 @@ function initiateOtpResendCooldown() {
         const resendLinkNode = document.getElementById("forgot-otp-resend-link");
         if (resendLinkNode) {
             if (SIGNUP_WIZARD_TEMPORARY_OBJECT.otpCooldownSecondsLeft > 0) {
-                resendLinkNode.innerText = `resend in ${SIGNUP_WIZARD_TEMPORARY_OBJECT.otpCooldownSecondsLeft}s`;
+                resendLinkNode.innerText = `Resend in ${SIGNUP_WIZARD_TEMPORARY_OBJECT.otpCooldownSecondsLeft}s`;
                 resendLinkNode.style.opacity = "0.5";
                 resendLinkNode.style.fontWeight = "400";
                 resendLinkNode.style.pointerEvents = "none";
             } else {
-                resendLinkNode.innerText = "resend";
+                resendLinkNode.innerText = "Resend";
                 resendLinkNode.style.opacity = "1";
                 resendLinkNode.style.fontWeight = "600";
                 resendLinkNode.style.pointerEvents = "auto";
@@ -1384,7 +1377,7 @@ function renderForgotPasswordOtpVerificationLayout() {
     const maskedTargetEmail = SIGNUP_WIZARD_TEMPORARY_OBJECT.resetTargetEmail;
 
     const secondsLeft = SIGNUP_WIZARD_TEMPORARY_OBJECT.otpCooldownSecondsLeft || 0;
-    const textLabel = secondsLeft > 0 ? `resend in ${secondsLeft}s` : "resend";
+    const textLabel = secondsLeft > 0 ? `Resend in ${secondsLeft}s` : "resend";
     const opacityStyle = secondsLeft > 0 ? "0.5" : "1";
     const weightStyle = secondsLeft > 0 ? "400" : "600";
     const pointerEventsStyle = secondsLeft > 0 ? "none" : "auto";
@@ -1850,7 +1843,7 @@ async function launchComprehensiveProductSpecificationsExpandedModalView(product
 
         detailOverlayBodyNode.innerHTML = `
             <div class="modal-expanded-header-row" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--fort-gray-border); padding-bottom:14px;">
-                <h3>Product Detailed Specification (Real-time Cloud Profile)</h3>
+                <h3>Product Detailed Specifications</h3>
                 <button onclick="closeActiveModalDirectly('product-detail-modal')" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">✕</button>
             </div>
             <div class="modal-expanded-content-split-grid margin-top-md" style="display:grid; grid-template-columns: 1fr 1fr; gap:24px;">
@@ -1864,7 +1857,7 @@ async function launchComprehensiveProductSpecificationsExpandedModalView(product
                         <img src="${vendorAvatarImage}" style="width:44px; height:44px; border-radius:50%; object-fit:cover;" class="circle-container" alt="Vendor Profile Photo">
                         <div>
                             <h4 style="color:var(--fort-blue-primary); margin:0;">${operationalTargetProfileOwnerRecord.businessName || operationalTargetProfileOwnerRecord.identityName}</h4>
-                            <span style="font-size:0.75rem; color:var(--fort-gray-slate);">Verification Origin Region: ${operationalTargetProfileOwnerRecord.country}</span>
+                            <span style="font-size:0.75rem; color:var(--fort-gray-slate);">Country: ${operationalTargetProfileOwnerRecord.country}</span>
                         </div>
                     </div>
                     
@@ -2314,13 +2307,23 @@ function initializeFirebaseRealtimeMessageStream(currentUserId, activePartnerId)
 }
 
 function activateMessengerConversationWorkspaceSessionBlock(targetCounterpartyUidValue) {
+    // Responsive View Handling Validation
+    if (window.innerWidth <= 768) {
+        APP_STATE.deviceMode = 'phone';
+    } else {
+        APP_STATE.deviceMode = 'laptop';
+    }
+
     APP_STATE.activeChatTargetUserHash = targetCounterpartyUidValue;
     
     document.getElementById("chat-pane-empty-notice").classList.add("hidden-node");
     const activeWorkspaceBlockNode = document.getElementById("chat-pane-active-view");
     activeWorkspaceBlockNode.classList.remove("hidden-node");
-    if(APP_STATE.deviceMode === 'phone') {
-         document.getElementById("chat-conversation-pane").classList.add("phone-active-thread");
+    
+    // Toggle mobile screen slider styling class dynamically matching your responsive layout rules
+    const chatContainerPane = document.getElementById("chat-conversation-pane");
+    if (chatContainerPane) {
+        chatContainerPane.classList.add("phone-active-thread");
     }
     
     const targetToolbarNodeElement = document.getElementById("chat-window-top-toolbar");
@@ -2329,6 +2332,9 @@ function activateMessengerConversationWorkspaceSessionBlock(targetCounterpartyUi
         targetToolbarNodeElement.innerHTML = `
             <div style="display:flex; align-items:center; gap:10px; width:100%; justify-content:space-between; background-color: #2c5282; color:var(--fort-white-pure); padding:8px 14px;" class="rounded-rect">
                 <div style="display:flex; align-items:center; gap:10px;">
+                    <button onclick="event.stopPropagation(); closePhoneConversationOverlayViewBlock()" class="mobile-close-chat-btn" style="background:none; border:none; color:#fff; font-size:1.3rem; margin-right:8px; padding:0 5px; cursor:pointer;">
+                        ←
+                    </button>
                     <span style="font-weight:700; font-size:0.95rem;">📢 ${headlineLabel}</span>
                 </div>
             </div>
@@ -2339,7 +2345,9 @@ function activateMessengerConversationWorkspaceSessionBlock(targetCounterpartyUi
         targetToolbarNodeElement.innerHTML = `
             <div style="display:flex; align-items:center; gap:10px; width:100%; justify-content:space-between; background-color: var(--fort-blue-primary); color:var(--fort-white-pure); padding:8px 14px;" class="rounded-rect">
                 <div style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="launchDetailedUserProfileContextOverlaySummaryModal('${targetCounterpartyUidValue}')">
-                    ${APP_STATE.deviceMode === 'phone' ? `<button onclick="event.stopPropagation(); closePhoneConversationOverlayViewBlock()" style="background:none; border:none; color:#fff; font-size:1.1rem; margin-right:4px;">←</button>` : ''}
+                    <button onclick="event.stopPropagation(); closePhoneConversationOverlayViewBlock()" class="mobile-close-chat-btn" style="background:none; border:none; color:#fff; font-size:1.3rem; margin-right:8px; padding:0 5px; cursor:pointer;">
+                        ←
+                    </button>
                     <img src="${counterpartyUserRecord.avatar || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23ffffff\'><path d=\'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z\'/></svg>'}" style="width:32px; height:32px;" class="circle-container" alt="User Avatar Image Context">
                     <span style="font-weight:600; font-size:0.9rem;">${counterpartyUserRecord.identityName}</span>
                 </div>
@@ -2359,7 +2367,10 @@ function closePhoneConversationOverlayViewBlock() {
         ACTIVE_CHAT_REALTIME_UNSUBSCRIBE_WORKER();
         ACTIVE_CHAT_REALTIME_UNSUBSCRIBE_WORKER = null;
     }
-    document.getElementById("chat-conversation-pane").classList.remove("phone-active-thread");
+    const chatContainerPane = document.getElementById("chat-conversation-pane");
+    if (chatContainerPane) {
+        chatContainerPane.classList.remove("phone-active-thread");
+    }
     APP_STATE.activeChatTargetUserHash = null;
     renderUserConversationsLogRoster();
 }
@@ -2812,12 +2823,12 @@ function launchUploadProductPasswordVerificationStep() {
             <label>Active Password:</label>
             <input type="password" id="upload-verify-password" class="form-field-control" placeholder="Enter password to verify ownership context">
             
-            <div class="margin-top-xs">
-                <input type="checkbox" id="chk-upload-showpass" onchange="toggleFormPasswordFieldVisibility(this, 'upload-verify-password')">
-                <label for="chk-upload-showpass" style="font-size:0.85rem; font-weight:400;">Show Password</label>
-            </div>
-            
             <div id="err-upload-reauth-msg" class="text-danger-alert hidden-node">Incorrect Password</div>
+        </div>
+
+        <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+            <input type="checkbox" id="chk-upload-showpass" onchange="toggleFormPasswordFieldVisibility(this, 'upload-verify-password')">
+            <label for="chk-upload-showpass" style="font-size: 0.8rem; font-weight: 400; cursor: pointer; user-select: none;">Show Password</label>            
         </div>
 
         <div class="text-center margin-top-xs">
@@ -3167,9 +3178,10 @@ function initializeProfileDetailsAccountManagementFieldsValues() {
 }
 
 /**
- * Stage 1 Re-authentication verification modal framework step
- * Validates baseline ownership using the user's active password expression.
+ * Profile Edit Multi-step Wizard Management System
+ * Enforces current password validation followed by a secure email OTP check before saving mutations to Firebase Firestore.
  */
+
 function openProfileEditWizard(targetFieldNameStringTokenKey) {
     const modalTargetNode = document.getElementById("auth-modal-content");
     if (!modalTargetNode) return;
@@ -3187,69 +3199,47 @@ function openProfileEditWizard(targetFieldNameStringTokenKey) {
             <label for="chk-signin-showpass" style="font-size: 0.8rem; font-weight: 400; cursor: pointer; user-select: none;">Show Password</label>
         </div>
 
-        <div class="text-center margin-top-xs">
-            <span style="color:var(--fort-blue-light); cursor:pointer; font-size:0.9rem;" onclick="renderForgotPasswordModalWorkflow()">Forgot Password?</span>
+        <div class="btn-group margin-top-md">
+            <button onclick="closeActiveModalDirectly('auth-modal')" class="btn-gray">Cancel</button>
+            <button onclick="executeVerifyProfileReauthCredentialPasswordMatch('${targetFieldNameStringTokenKey}')" class="btn-blue">Verify Password</button>
         </div>
-        <br>
-        <div class="btn-group">
-            <button onclick="closeActiveModalDirectly('auth-modal')" class="btn-gray">Cancel</button> 
-            <button id="btn-profile-reauth-submit" onclick="executeValidateProfileReauthSessionTokenStep('${targetFieldNameStringTokenKey}')" class="btn-blue">Verify Password Phrase</button>
-        </div>
-
-    `; 
-    document.getElementById("auth-modal").classList.add("active"); 
+    `;
 }
 
-/**
- * Validates baseline text credentials to match state profiles directly.
- * Dynamically forwards to the newly integrated EmailJS Step 2 validation subsystem.
- */
-async function executeValidateProfileReauthSessionTokenStep(targetFieldNameStringTokenKey) {
-    const enteredPass = document.getElementById("profile-reauth-key").value; 
-    const errNode = document.getElementById("err-profile-reauth-msg"); 
-    const submitBtn = document.getElementById("btn-profile-reauth-submit");
-    if (!errNode) return;
-
-    errNode.classList.add("hidden-node"); 
+function executeVerifyProfileReauthCredentialPasswordMatch(targetFieldNameStringTokenKey) {
+    const enteredPasswordValue = document.getElementById("profile-reauth-key").value;
+    const errorDisplayNode = document.getElementById("err-profile-reauth-msg");
     
-    const validPasswordPattern = APP_STATE.currentUser.secretKey || APP_STATE.currentUser.password;
-    if(enteredPass !== validPasswordPattern) { 
-        errNode.innerText = "Incorrect Password Match Frame Error.";
-        errNode.classList.remove("hidden-node"); 
-        return; 
-    } 
-
-    if (submitBtn) submitBtn.disabled = true;
-
-    // Dispatches the EmailJS OTP dynamic transaction challenge state for Step 2
-    await sendProfileMutationEmailJsOtpWorkflow(targetFieldNameStringTokenKey, true);
+    errorDisplayNode.classList.add("hidden-node");
+    
+    if (enteredPasswordValue !== APP_STATE.currentUser.secretKey) {
+        errorDisplayNode.innerText = "Incorrect Password";
+        errorDisplayNode.classList.remove("hidden-node");
+        return;
+    }
+    
+    sendProfileEditWizardEmailJsOtpWorkflow(targetFieldNameStringTokenKey, true);
 }
 
-/**
- * Handles generating, tracking, and executing EmailJS calls for Profile Changes OTP validation.
- * Enforces a rigorous constraint checking architecture of 5 maximum attempts per day per account.
- */
-async function sendProfileMutationEmailJsOtpWorkflow(targetFieldNameStringTokenKey, isInitialLaunch = false) {
-    const targetEmail = APP_STATE.currentUser.identifierText || APP_STATE.currentUser.email || "";
-    const userNameStr = APP_STATE.currentUser.identityName || APP_STATE.currentUser.username || "User";
-    const todayKeyStr = "otp_profile_limit_" + new Date().toISOString().split('T')[0] + "_" + targetEmail.toLowerCase();
+async function sendProfileEditWizardEmailJsOtpWorkflow(targetFieldNameStringTokenKey, isInitialLaunch = false) {
+    const targetEmail = APP_STATE.currentUser.identifierText;
+    const todayKeyStr = "profile_otp_limit_" + new Date().toISOString().split('T')[0] + "_" + targetEmail.toLowerCase();
     
     let dailyAttemptsCount = parseInt(localStorage.getItem(todayKeyStr) || "0", 10);
-    
     if (dailyAttemptsCount >= 5) {
         if (!isInitialLaunch) {
-            const feedbackElement = document.getElementById("err-profile-otp-feedback");
+            const feedbackElement = document.getElementById("err-profile-step2-feedback");
             if (feedbackElement) {
-                feedbackElement.innerText = "Maximum daily limit reached. You can only send up to 5 validation OTPs per day.";
+                feedbackElement.innerText = "Maximum daily limit reached. You can only send up to 5 OTPs per day.";
                 feedbackElement.style.color = "red";
                 feedbackElement.classList.remove("hidden-node");
             }
         } else {
-            renderProfileEditOtpVerificationLayout(targetFieldNameStringTokenKey);
+            renderProfileEditWizardStepTwoLayout(targetFieldNameStringTokenKey);
             setTimeout(() => {
-                const feedbackElement = document.getElementById("err-profile-otp-feedback");
+                const feedbackElement = document.getElementById("err-profile-step2-feedback");
                 if (feedbackElement) {
-                    feedbackElement.innerText = "Maximum daily limit reached. You can only send up to 5 validation OTPs per day.";
+                    feedbackElement.innerText = "Maximum daily limit reached. You can only send up to 5 OTPs per day.";
                     feedbackElement.style.color = "red";
                     feedbackElement.classList.remove("hidden-node");
                 }
@@ -3258,20 +3248,18 @@ async function sendProfileMutationEmailJsOtpWorkflow(targetFieldNameStringTokenK
         return;
     }
 
-    // Generate explicit 4-digit code parameters
+    initiateProfileEditOtpResendCooldown(targetFieldNameStringTokenKey);
+
     const freshGeneratedOtpCode = Math.floor(1000 + Math.random() * 9000);
-    if (!window.SIGNUP_WIZARD_TEMPORARY_OBJECT) {
-        window.SIGNUP_WIZARD_TEMPORARY_OBJECT = {};
-    }
-    SIGNUP_WIZARD_TEMPORARY_OBJECT.activeProfileEditOtp = freshGeneratedOtpCode;
+    SIGNUP_WIZARD_TEMPORARY_OBJECT.profileActiveVerificationOtp = freshGeneratedOtpCode;
 
     dailyAttemptsCount++;
     localStorage.setItem(todayKeyStr, dailyAttemptsCount.toString());
 
     if (!isInitialLaunch) {
-        const feedbackElement = document.getElementById("err-profile-otp-feedback");
+        const feedbackElement = document.getElementById("err-profile-step2-feedback");
         if (feedbackElement) {
-            feedbackElement.innerText = "Sending fresh token key paths...";
+            feedbackElement.innerText = "Sending fresh token...";
             feedbackElement.style.color = "blue";
             feedbackElement.classList.remove("hidden-node");
         }
@@ -3281,277 +3269,228 @@ async function sendProfileMutationEmailJsOtpWorkflow(targetFieldNameStringTokenK
         if (window.emailjs) {
             await window.emailjs.send(
                 "service_ejag5pe", 
-                "template_nzub7tk", 
+                "template_jz0s31e", 
                 {
                     to_email: targetEmail,
-                    user_name: userNameStr,
+                    user_name: APP_STATE.currentUser.identityName,
                     otp_code: freshGeneratedOtpCode
                 }
             );
-            
             if (isInitialLaunch) {
-                renderProfileEditOtpVerificationLayout(targetFieldNameStringTokenKey);
+                renderProfileEditWizardStepTwoLayout(targetFieldNameStringTokenKey);
             } else {
-                const feedbackElement = document.getElementById("err-profile-otp-feedback");
+                const feedbackElement = document.getElementById("err-profile-step2-feedback");
                 if (feedbackElement) {
-                    feedbackElement.innerText = "A new verification code token string has been sent.";
+                    feedbackElement.innerText = "A new verification code has been successfully sent.";
                     feedbackElement.style.color = "green";
+                    feedbackElement.classList.remove("hidden-node");
                 }
             }
         } else {
-            console.warn("EmailJS global dependency missing. Bypassing delivery mock loops.");
-            if (isInitialLaunch) renderProfileEditOtpVerificationLayout(targetFieldNameStringTokenKey);
+            console.warn("EmailJS library missing.");
+            if (isInitialLaunch) renderProfileEditWizardStepTwoLayout(targetFieldNameStringTokenKey);
         }
     } catch (sendErr) {
-        console.error("EmailJS profile update token transmission failure trace:", sendErr);
+        console.error("EmailJS profile update error:", sendErr);
         if (isInitialLaunch) {
-            renderProfileEditOtpVerificationLayout(targetFieldNameStringTokenKey);
+            renderProfileEditWizardStepTwoLayout(targetFieldNameStringTokenKey);
         } else {
-            const feedbackElement = document.getElementById("err-profile-otp-feedback");
+            const feedbackElement = document.getElementById("err-profile-step2-feedback");
             if (feedbackElement) {
-                feedbackElement.innerText = "Failed transmission delivery. Please verify connectivity.";
+                feedbackElement.innerText = "Failed to send code. Please check your connection.";
                 feedbackElement.style.color = "red";
+                feedbackElement.classList.remove("hidden-node");
             }
         }
     }
 }
 
-/**
- * Step 2 of 3 Layout: UI markup prompting for the generated security OTP string.
- */
-function renderProfileEditOtpVerificationLayout(targetFieldNameStringTokenKey) {
+function initiateProfileEditOtpResendCooldown(targetFieldNameStringTokenKey) {
+    if (SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpInterval) {
+        clearInterval(SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpInterval);
+    }
+    SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpSecondsLeft = 30;
+
+    SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpInterval = setInterval(() => {
+        SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpSecondsLeft--;
+        const resendLinkNode = document.getElementById("profile-otp-resend-link");
+        
+        if (resendLinkNode) {
+            if (SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpSecondsLeft > 0) {
+                resendLinkNode.innerText = `Resend in ${SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpSecondsLeft}s`;
+                resendLinkNode.style.opacity = "0.5";
+                resendLinkNode.style.fontWeight = "400";
+                resendLinkNode.style.pointerEvents = "none";
+            } else {
+                resendLinkNode.innerText = "Resend";
+                resendLinkNode.style.opacity = "1";
+                resendLinkNode.style.fontWeight = "600";
+                resendLinkNode.style.pointerEvents = "auto";
+                clearInterval(SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpInterval);
+                SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpInterval = null;
+            }
+        } else if (SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpSecondsLeft <= 0) {
+            clearInterval(SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpInterval);
+            SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpInterval = null;
+        }
+    }, 1000);
+}
+
+function handleProfileEditOtpResendClickInterception(targetFieldNameStringTokenKey) {
+    if (SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpSecondsLeft > 0) return;
+    sendProfileEditWizardEmailJsOtpWorkflow(targetFieldNameStringTokenKey, false);
+}
+
+function renderProfileEditWizardStepTwoLayout(targetFieldNameStringTokenKey) {
     const modalTargetNode = document.getElementById("auth-modal-content");
-    if (!modalTargetNode) return;
+    const targetEmail = APP_STATE.currentUser.identifierText;
     
-    const targetEmail = APP_STATE.currentUser.identifierText || APP_STATE.currentUser.email || "";
+    const secondsLeft = SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpSecondsLeft || 0;
+    const textLabel = secondsLeft > 0 ? `Resend in ${secondsLeft}s` : "resend";
+    const opacityStyle = secondsLeft > 0 ? "0.5" : "1";
+    const weightStyle = secondsLeft > 0 ? "400" : "600";
+    const pointerStyle = secondsLeft > 0 ? "none" : "auto";
 
     modalTargetNode.innerHTML = `
-        <h3>Verify Identity - Security Token (Step 2 of 3)</h3>
-        <p style="font-size:0.92rem; color:var(--fort-blue-dark); line-height: 1.5; margin-top:12px; font-weight: 500;">
-            Enter the OTP sent to ${targetEmail}
+        <h3>Verify Security Profile Identity (Step 2 of 3)</h3>
+        <p style="font-size:0.9rem; margin-top:6px; color:var(--fort-gray-slate);">
+            An identity verification message code was sent to your registered profile email address: ${targetEmail}
         </p>
-        
-        <div class="form-input-container margin-top-sm" style="margin-top:15px;">
-            <label style="font-size:0.82rem; font-weight:700; color:var(--fort-gray-slate);">Input 4-Digit Security Authorization Code:</label>
+
+        <div class="form-input-container margin-top-sm">
+            <label>Input 4-Digit Security OTP Token Key:</label>
             <input type="text" id="profile-otp-input" class="form-field-control" placeholder="X X X X" maxlength="4" style="text-align:center; font-size:1.25rem; letter-spacing:8px;">
-            <div id="err-profile-otp-feedback" class="text-danger-alert hidden-node" style="color: red; font-size: 0.8rem; margin-top: 4px;"></div>
+            <div id="err-profile-step2-feedback" class="text-danger-alert hidden-node" style="color: red; font-size: 0.8rem; margin-top: 4px;"></div>
         </div>
 
         <div style="margin-top: 10px; font-size: 0.85rem;">
             <span>Didn't receive message? </span>
-            <a href="javascript:void(0)" onclick="sendProfileMutationEmailJsOtpWorkflow('${targetFieldNameStringTokenKey}', false)" style="color: #007bff; font-weight: 600; text-decoration: none;">Resend</a>
+            <a href="javascript:void(0)" id="profile-otp-resend-link" onclick="handleProfileEditOtpResendClickInterception('${targetFieldNameStringTokenKey}')" style="color: #007bff; text-decoration:none; font-weight:${weightStyle}; opacity:${opacityStyle}; pointer-events:${pointerStyle};">${textLabel}</a>
         </div>
 
-        <p style="font-size:0.92rem; color:var(--fort-blue-dark); line-height: 1.5; margin-top:12px; font-weight: 500;">
-            Note: If you didn't see the message in your inbox, also check the spam section in your email and tag the email "Not Spam".
-        </p>
-        
-        <div class="btn-group margin-top-lg" style="margin-top: 20px;">
-            <button onclick="openProfileEditWizard('${targetFieldNameStringTokenKey}')" class="btn-gray">Back</button>
-            <button id="btn-profile-finalize-otp" onclick="executeValidateProfileOtpEntryToken('${targetFieldNameStringTokenKey}')" class="btn-blue">Verify Code</button>
+        <div class="btn-group margin-top-md">
+            <button onclick="handleClearProfileTimersAndReturnToStepOne('${targetFieldNameStringTokenKey}')" class="btn-gray">Back</button>
+            <button onclick="executeValidateProfileWizardOtpTokenKey('${targetFieldNameStringTokenKey}')" class="btn-blue">Verify Security Code</button>
         </div>
     `;
 }
 
-/**
- * Validates the entered OTP code against the tracking context object.
- */
-function executeValidateProfileOtpEntryToken(targetFieldNameStringTokenKey) {
-    const userInputCodeField = document.getElementById("profile-otp-input");
-    const feedbackElement = document.getElementById("err-profile-otp-feedback");
-    
-    if (feedbackElement) {
-        feedbackElement.classList.add("hidden-node");
-        feedbackElement.style.color = "red";
+function handleClearProfileTimersAndReturnToStepOne(targetFieldNameStringTokenKey) {
+    if (SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpInterval) {
+        clearInterval(SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpInterval);
+        SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpInterval = null;
     }
+    SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpSecondsLeft = 0;
+    openProfileEditWizard(targetFieldNameStringTokenKey);
+}
 
-    const typedOtpValue = userInputCodeField.value.trim();
-    const systemExpectedValue = String(SIGNUP_WIZARD_TEMPORARY_OBJECT.activeProfileEditOtp || "");
+function executeValidateProfileWizardOtpTokenKey(targetFieldNameStringTokenKey) {
+    const inputVal = document.getElementById("profile-otp-input").value.trim();
+    const feedback = document.getElementById("err-profile-step2-feedback");
+    
+    feedback.classList.add("hidden-node");
+    feedback.style.color = "red";
 
-    if (!typedOtpValue || typedOtpValue !== systemExpectedValue) {
-        if (feedbackElement) {
-            feedbackElement.innerText = "Invalid security verification token matched. Verify entry values.";
-            feedbackElement.classList.remove("hidden-node");
-        }
+    const systemExpected = String(SIGNUP_WIZARD_TEMPORARY_OBJECT.profileActiveVerificationOtp || "");
+    if (!inputVal || inputVal !== systemExpected) {
+        feedback.innerText = "Invalid verification token code expression entry parameter configuration.";
+        feedback.classList.remove("hidden-node");
         return;
     }
 
-    // Advance safely to Step 3 Form Layout
-    executeFinalProfileDataEditCommitStepThreeFormLayout(targetFieldNameStringTokenKey);
+    if (SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpInterval) {
+        clearInterval(SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpInterval);
+        SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpInterval = null;
+    }
+    SIGNUP_WIZARD_TEMPORARY_OBJECT.profileOtpSecondsLeft = 0;
+
+    renderProfileEditWizardStepThreeFinalModificationInputLayout(targetFieldNameStringTokenKey);
 }
 
-/**
- * Displays input layout forms for the selected field workspace context (Step 3 of 3).
- */
-function executeFinalProfileDataEditCommitStepThreeFormLayout(targetFieldNameStringTokenKey) {
-    const modalTargetNode = document.getElementById("auth-modal-content"); 
-    if (!modalTargetNode) return;
+function renderProfileEditWizardStepThreeFinalModificationInputLayout(targetFieldNameStringTokenKey) {
+    const modalTargetNode = document.getElementById("auth-modal-content");
+    let inputFieldTypeLayoutPlaceholderHTML = ``;
 
-    let injectionMarkupFormHTML = ""; 
-    APP_CACHE.temporaryProfileAvatarDataUrl = ""; // Clear lingering state frames cache references
-    
-    if(targetFieldNameStringTokenKey === 'username') { 
-        injectionMarkupFormHTML = `
-            <label>Define New Profile Username:</label>
-            <input type="text" id="new-profile-val-field" class="form-field-control" value="${APP_STATE.currentUser.identityName || APP_STATE.currentUser.username || ''}">
-        `;
-    } else if(targetFieldNameStringTokenKey === 'businessName') { 
-        injectionMarkupFormHTML = `
-            <label>Define New Business Name:</label>
-            <input type="text" id="new-profile-val-field" class="form-field-control" value="${APP_STATE.currentUser.businessName || ''}">
-        `;
-    } else if(targetFieldNameStringTokenKey === 'businessInfo') { 
-        injectionMarkupFormHTML = `
-            <label>Define New Public Business Summary:</label>
-            <input type="text" id="new-profile-val-field" class="form-field-control" value="${APP_STATE.currentUser.businessInfo || ''}">
-        `;
-    } else if(targetFieldNameStringTokenKey === 'password') { 
-        injectionMarkupFormHTML = `
-            <label>Create New Password:</label>
-            <input type="password" id="new-profile-val-field" class="form-field-control" placeholder="Input New Password Syntax Combo">
-            <label class="margin-top-xs">Re-type Code Syntax to Confirm Parity Convergence:</label>
-            <input type="password" id="new-profile-val-field-confirm" class="form-field-control" placeholder="Confirm New Password Syntax Combo">
-            <div id="err-profile-pass-complex-feedback-lbl" class="text-danger-alert hidden-node" style="color: red; font-size: 0.8rem; margin-top: 4px;"></div>
-        `;
-    } else if(targetFieldNameStringTokenKey === 'avatar') { 
-        const currentAvatarSrc = APP_STATE.currentUser.avatar ||
-            "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230288d1'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>";
-        injectionMarkupFormHTML = `
-            <label>Change Profile Picture:</label>
-            <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; margin: 15px 0;">
-                <div class="fort-avatar-circle-container">
-                    <img id="profile-edit-wizard-avatar-preview" class="fort-avatar-circle-img" src="${currentAvatarSrc}" alt="Avatar Preview">
-                </div>
-                <input type="file" id="new-profile-avatar-file-input" class="form-field-control" accept=".png, .jpg, .jpeg" onchange="processWizardAvatarFileSelectionDirectly()">
+    if (targetFieldNameStringTokenKey === 'secretKey') {
+        inputFieldTypeLayoutPlaceholderHTML = `
+            <div class="form-input-container margin-top-sm">
+                <label>Input New Security Password Expression:</label>
+                <input type="password" id="profile-new-value-1" class="form-field-control" placeholder="New structural value">
             </div>
-            <input type="hidden" id="new-profile-val-field" value="AVATAR_MUTATION_TOKEN">
+            <div class="form-input-container">
+                <label>Confirm Entry Configuration Parameters Match:</label>
+                <input type="password" id="profile-new-value-2" class="form-field-control" placeholder="Retype expression code configurations">
+            </div>
+        `;
+    } else {
+        const structuralDisplayLabelText = targetFieldNameStringTokenKey === 'identityName' ? 'Personal Full Name Context' : 
+                                            (targetFieldNameStringTokenKey === 'businessName' ? 'Business Trading Enterprise Title' : 'Business Strategy Description Information Portfolio Summary Statement');
+        inputFieldTypeLayoutPlaceholderHTML = `
+            <div class="form-input-container margin-top-sm">
+                <label>Modify ${structuralDisplayLabelText}:</label>
+                <input type="text" id="profile-new-value-1" class="form-field-control" value="${APP_STATE.currentUser[targetFieldNameStringTokenKey] || ''}" placeholder="Enter updated field text value mappings">
+            </div>
         `;
     }
-    
+
     modalTargetNode.innerHTML = `
-        <h3>Modify Profile Parameters (Step 3 of 3)</h3>
-        <div class="form-input-container margin-top-md">
-            ${injectionMarkupFormHTML}
+        <h3>Commit Field Mutations (Step 3 of 3)</h3>
+        <div id="profile-mutation-fields-context-node-target">
+            ${inputFieldTypeLayoutPlaceholderHTML}
+            <div id="err-profile-step3-feedback" class="text-danger-alert hidden-node" style="color: red; font-size: 0.8rem; margin-top: 4px;"></div>
         </div>
-        <div class="btn-group" style="margin-top: 15px;">
-            <button onclick="closeActiveModalDirectly('auth-modal')" class="btn-gray">Discard Mutation</button>
-            <button onclick="executePipelineSaveFinalProfileFieldsValuesChanges('${targetFieldNameStringTokenKey}')" class="btn-blue">Commit Overwrite</button> 
+
+        <div class="btn-group margin-top-md">
+            <button onclick="closeActiveModalDirectly('auth-modal')" class="btn-gray">Cancel</button>
+            <button onclick="executeSaveProfileWizardModificationsToDatabase('${targetFieldNameStringTokenKey}')" class="btn-blue">Save Changes</button>
         </div>
-    `; 
+    `;
 }
 
-/**
- * Loads image selections locally to cache and hooks real-time previews instantly.
- */
-function processWizardAvatarFileSelectionDirectly() {
-    const fileNode = document.getElementById("new-profile-avatar-file-input");
-    if(fileNode && fileNode.files && fileNode.files[0]) { 
-        const readerInstance = new FileReader();
-        readerInstance.onload = function(e) { 
-            APP_CACHE.temporaryProfileAvatarDataUrl = e.target.result;
-            const previewImageElement = document.getElementById("profile-edit-wizard-avatar-preview"); 
-            if(previewImageElement) { 
-                previewImageElement.src = e.target.result;
-            }
-        };
-        readerInstance.readAsDataURL(fileNode.files[0]);
-    }
-}
+async function executeSaveProfileWizardModificationsToDatabase(targetFieldNameStringTokenKey) {
+    const val1 = document.getElementById("profile-new-value-1").value.trim();
+    const errorNode = document.getElementById("err-profile-step3-feedback");
+    errorNode.classList.add("hidden-node");
 
-/**
- * CORE MODULE FIREBASE SYNC: Commits profile parameters updates directly into Firebase collections records.
- */
-async function executePipelineSaveFinalProfileFieldsValuesChanges(targetFieldNameStringTokenKey) {
-    const inputPrimaryElement = document.getElementById("new-profile-val-field"); 
-    let targetCoreMutationStringValueValue = inputPrimaryElement ? inputPrimaryElement.value.trim() : "";
-    const currentUserId = APP_STATE.currentUser.uid || APP_STATE.currentUser.id;
-    
-    if(targetFieldNameStringTokenKey === 'password') { 
-         const p2 = document.getElementById("new-profile-val-field-confirm").value;
-         const errLabel = document.getElementById("err-profile-pass-complex-feedback-lbl"); 
-         if (!errLabel) return;
-         errLabel.classList.add("hidden-node"); 
-         
-         if(targetCoreMutationStringValueValue !== p2) { 
-             errLabel.innerText = "Password validation parameters do not match.";
-             errLabel.classList.remove("hidden-node"); 
-             return; 
-         }
-         if(targetCoreMutationStringValueValue.length < 6 || !/[A-Z]/.test(targetCoreMutationStringValueValue) || !/[a-z]/.test(targetCoreMutationStringValueValue) || !/[0-9]/.test(targetCoreMutationStringValueValue) || !/[^A-Za-z0-9]/.test(targetCoreMutationStringValueValue)) { 
-             errLabel.innerText = "Password must contain uppercase, lowercase, special characters, and numeric markers configurations.";
-             errLabel.classList.remove("hidden-node"); 
-             return; 
-         }
+    if (!val1) {
+        errorNode.innerText = "Structural modifications field expression cannot post blank spaces updates tokens.";
+        errorNode.classList.remove("hidden-node");
+        return;
     }
-    
-    if(targetFieldNameStringTokenKey === 'avatar') { 
-        if(APP_CACHE.temporaryProfileAvatarDataUrl === "") { 
-            alert("Please browse and select a valid profile picture file framework first.");
+
+    if (targetFieldNameStringTokenKey === 'secretKey') {
+        const val2 = document.getElementById("profile-new-value-2").value.trim();
+        if (val1 !== val2) {
+            errorNode.innerText = "Password mismatch configuration parameter error mapping tracking metrics discovered.";
+            errorNode.classList.remove("hidden-node");
             return;
         }
-        targetCoreMutationStringValueValue = APP_CACHE.temporaryProfileAvatarDataUrl;
-    }
-    
-    if(targetCoreMutationStringValueValue === "") { 
-        alert("Mutation parameters mismatch: Blank information text blocks cannot be committed.");
-        return; 
-    }
-    
-    try {
-        const updatedFieldsPayload = {};
-        if(targetFieldNameStringTokenKey === 'username') {
-            updatedFieldsPayload.identityName = targetCoreMutationStringValueValue;
-            updatedFieldsPayload.username = targetCoreMutationStringValueValue;
-        } 
-        else if(targetFieldNameStringTokenKey === 'businessName') updatedFieldsPayload.businessName = targetCoreMutationStringValueValue;
-        else if(targetFieldNameStringTokenKey === 'businessInfo') updatedFieldsPayload.businessInfo = targetCoreMutationStringValueValue; 
-        else if(targetFieldNameStringTokenKey === 'password') {
-            updatedFieldsPayload.secretKey = targetCoreMutationStringValueValue;
-            updatedFieldsPayload.password = targetCoreMutationStringValueValue;
-        } 
-        else if(targetFieldNameStringTokenKey === 'avatar') updatedFieldsPayload.avatar = targetCoreMutationStringValueValue;
-
-        // Commit Overwrites directly to Firebase Cloud Document Store matching unique User ID tracking keys
-        if (window.FortMartFirebase || window.firebase) {
-            const dbRefInstance = window.FortMartFirebase ?
-                window.FortMartFirebase.db : window.firebase.firestore();
-            
-            if (window.FortMartFirebase) {
-                const { doc, setDoc } = window.FortMartFirebase;
-                // OVERWRITE REPLACEMENT: Using setDoc with { merge: true } to apply specific parameters safely
-                await setDoc(doc(dbRefInstance, "users", currentUserId), updatedFieldsPayload, { merge: true });
-            } else {
-                await dbRefInstance.collection("users").doc(currentUserId).set(updatedFieldsPayload, { merge: true });
-            }
-
-            // Propagate notification update alerts down to system administrative dialog structures channels
-            const systemTelemetryNotification = {
-                mid: "telemetry_sys_" + Date.now(),
-                senderUid: "admin",
-                text: `[System Core Parameters Mutation Alert]: Field pointer metadata "${targetFieldNameStringTokenKey}" value statement overwritten successfully inside cloud schemas.`, 
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), 
-                status: "bold-double"
-            };
-            if (window.FortMartFirebase) {
-                const { collection, doc, updateDoc, arrayUnion } = window.FortMartFirebase;
-                await updateDoc(doc(dbRefInstance, "chats", `chat_admin_${currentUserId}`), {
-                    messageLog: arrayUnion(systemTelemetryNotification)
-                }).catch(() => {});
-            } else {
-                await dbRefInstance.collection("chats").doc(`chat_admin_${currentUserId}`).update({
-                    messageLog: window.firebase.firestore.FieldValue.arrayUnion(systemTelemetryNotification)
-                }).catch(() => {});
-            }
+        if (val1.length < 6 || !/[A-Z]/.test(val1) || !/[a-z]/.test(val1) || !/[0-9]/.test(val1) || !/[^A-Za-z0-9]/.test(val1)) {
+            errorNode.innerText = "Any password created should have at least one uppercase letter, one lowercase letter, one symbol, one number and should be at least six characters.";
+            errorNode.classList.remove("hidden-node");
+            return;
         }
+    }
 
-        // Apply synchronized mutations locally inside target data baseline arrays
+    const currentUserId = APP_STATE.currentUser.uid;
+    const updatedFieldsPayload = {};
+    updatedFieldsPayload[targetFieldNameStringTokenKey] = val1;
+    if (targetFieldNameStringTokenKey === 'secretKey') {
+        updatedFieldsPayload.password = val1;
+    }
+
+    try {
+        // Secure transaction commit directly to cloud infrastructure clusters
+        await setDoc(doc(db, "users", currentUserId), updatedFieldsPayload, { merge: true });
+
+        // Synchronize mutations internally inside local data array tracking setups
         const targetedUserIndexId = SYSTEM_DATABASE.users.findIndex(u => (u.uid === currentUserId || u.id === currentUserId));
-        if(targetedUserIndexId !== -1) {
+        if (targetedUserIndexId !== -1) {
             SYSTEM_DATABASE.users[targetedUserIndexId] = { ...SYSTEM_DATABASE.users[targetedUserIndexId], ...updatedFieldsPayload };
         }
 
         APP_STATE.currentUser = { ...APP_STATE.currentUser, ...updatedFieldsPayload };
-        APP_CACHE.temporaryProfileAvatarDataUrl = ""; // Reset internal memory pointers safely
+        APP_CACHE.temporaryProfileAvatarDataUrl = ""; // Reset memory cache references safely
         
         if (typeof syncPlatformDatabaseStateToWebStorage === "function") {
             syncPlatformDatabaseStateToWebStorage();
@@ -3563,7 +3502,7 @@ async function executePipelineSaveFinalProfileFieldsValuesChanges(targetFieldNam
         }
         
         if (typeof showAlertModal === "function") {
-            showAlertModal("Profile Synchronized", "System values successfully overwritten to cloud clusters.");
+            showAlertModal("Profile Synchronized", "System values successfully overwritten.");
         } else {
             alert("System Profile Parameters Overwritten and Synced Successfully.");
         }
@@ -3571,79 +3510,6 @@ async function executePipelineSaveFinalProfileFieldsValuesChanges(targetFieldNam
     } catch (cloudWriteExceptionError) {
         console.error("Firebase Cloud Storage Core Fields Overwrite Failure Event Exception:", cloudWriteExceptionError);
         alert("Cloud transaction boundary mismatch runtime error. Check device tracking configurations.");
-    }
-}
-
-/**
- * CORE MODULE FIREBASE SNAPSHOTS: Registers a real-time listener to fetch and sync 
- * products from the remote Firestore database collection directly into the application state.
- */
-function listenForRealTimeMarketplaceSnapshots() {
-    if (!APP_STATE.currentUser) return;
-
-    if (window.FortMartFirebase) {
-        const { db, collection, query, where, onSnapshot } = window.FortMartFirebase;
-        
-        // Define collection reference targeting the 'products' cloud node
-        const productsCollectionRef = collection(db, "products");
-        
-        // Create an active query stream to sync live records
-        const liveSnapshotQuery = query(productsCollectionRef);
-
-        // Attach the persistent real-time snapshot listener
-        onSnapshot(liveSnapshotQuery, (querySnapshot) => {
-            // Flush old local tracking states before appending updated live records
-            SYSTEM_DATABASE.products = [];
-            
-            querySnapshot.forEach((documentSnapshot) => {
-                if (documentSnapshot.exists()) {
-                    const dataPayload = documentSnapshot.data();
-                    SYSTEM_DATABASE.products.push({
-                        ...dataPayload,
-                        pid: documentSnapshot.id // Ensure consistency with mapping configurations
-                    });
-                }
-            });
-
-            // Persist synchronized structures dynamically inside local web storage layers
-            if (typeof syncPlatformDatabaseStateToWebStorage === "function") {
-                syncPlatformDatabaseStateToWebStorage();
-            }
-
-            // Instantly refresh active user interface tracking layouts logs
-            if (typeof renderAccountInventoryLedgerManagementDashboardGrid === "function") {
-                renderAccountInventoryLedgerManagementDashboardGrid();
-            }
-            if (typeof renderMarketplaceProductsDisplayLoop === "function") {
-                renderMarketplaceProductsDisplayLoop();
-            }
-        }, (error) => {
-            console.error("Firestore live marketplace snapshots sync processing error:", error);
-        });
-    } else if (window.firebase) {
-        // Fallback implementation block for legacy Firebase namespaced SDK structures
-        window.firebase.firestore().collection("products")
-            .onSnapshot((querySnapshot) => {
-                SYSTEM_DATABASE.products = [];
-                querySnapshot.forEach((doc) => {
-                    SYSTEM_DATABASE.products.push({
-                        ...doc.data(),
-                        pid: doc.id
-                    });
-                });
-                
-                if (typeof syncPlatformDatabaseStateToWebStorage === "function") {
-                    syncPlatformDatabaseStateToWebStorage();
-                }
-                if (typeof renderAccountInventoryLedgerManagementDashboardGrid === "function") {
-                    renderAccountInventoryLedgerManagementDashboardGrid();
-                }
-                if (typeof renderMarketplaceProductsDisplayLoop === "function") {
-                    renderMarketplaceProductsDisplayLoop();
-                }
-            }, (error) => {
-                console.error("Legacy Firestore snapshots collection stream sync error:", error);
-            });
     }
 }
 
@@ -3667,12 +3533,12 @@ function launchEditProductInventoryModalFormLayoutShell(targetProductIdKeyValueS
             <label>Active Password:</label>
             <input type="password" id="edit-verify-password" class="form-field-control" placeholder="Enter password to verify ownership context">
             
-            <div class="margin-top-xs">
-                <input type="checkbox" id="chk-edit-showpass" onchange="toggleFormPasswordFieldVisibility(this, 'edit-verify-password')">
-                <label for="chk-edit-showpass" style="font-size:0.85rem; font-weight:400;">Show Password</label>
-            </div>
-            
             <div id="err-edit-reauth-msg" class="text-danger-alert hidden-node">Incorrect Password</div>
+        </div>
+
+        <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+            <input type="checkbox" id="chk-edit-showpass" onchange="toggleFormPasswordFieldVisibility(this, 'edit-verify-password')">
+            <label for="chk-edit-showpass" style="font-size: 0.8rem; font-weight: 400; cursor: pointer; user-select: none;">Show Password</label>            
         </div>
 
         <div class="text-center margin-top-xs">
@@ -3908,12 +3774,12 @@ function displayConfirmationModalOverlayAction(messageStringText, callbackFuncti
             <label style="font-weight: 700; font-size: 0.85rem; color: var(--fort-blue-dark);">Confirm Password:</label>
             <input type="password" id="delete-verify-password" class="form-field-control" placeholder="Enter password to authorize permanent deletion" style="margin-top: 4px;">
             
-            <div style="margin-top: 6px; display: flex; align-items: center; gap: 4px;">
-                <input type="checkbox" id="chk-delete-showpass" onchange="toggleFormPasswordFieldVisibility(this, 'delete-verify-password')">
-                <label for="chk-delete-showpass" style="font-size: 0.8rem; font-weight: 400; cursor: pointer; user-select: none;">Show Password</label>
-            </div>
-            
             <div id="err-delete-reauth-msg" class="text-danger-alert hidden-node" style="color: red; font-size: 0.8rem; margin-top: 4px; display: none;">Incorrect Password Phrase</div>
+        </div>
+
+        <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+            <input type="checkbox" id="chk-delete-showpass" onchange="toggleFormPasswordFieldVisibility(this, 'delete-verify-password')">
+            <label for="chk-delete-showpass" style="font-size: 0.8rem; font-weight: 400; cursor: pointer; user-select: none;">Show Password</label>            
         </div>
     `;
 
@@ -4165,8 +4031,7 @@ function launchDetailedUserProfileContextOverlaySummaryModal(userIdTokenKeyParam
             
             <div class="margin-top-sm" style="display:flex; flex-direction:column; gap:8px;">
                  ${administrativeControlsInlineHTML}
-                 <p style="font-size:0.85rem; color:var(--fort-gray-slate); font-weight:600; margin-top:2px;">Origin Country Routing Address Context: <span style="color:var(--fort-blue-dark);">${targetUserObjMatchRecord.country || 'N/A'} (${targetUserObjMatchRecord.dialingCode || ''})</span></p>
-                 <p style="font-size:0.85rem; color:var(--fort-gray-slate); font-weight:600; margin-top:2px;">Platform Runtime Dynamic Network Presence Operational Baseline: <span style="color:var(--fort-green-check); font-weight:700;">Active Online Presence Parameter Baseline Sync Pulse Ready</span></p>
+                 <p style="font-size:0.85rem; color:var(--fort-gray-slate); font-weight:600; margin-top:2px;">Country (Dailing Code): <span style="color:var(--fort-blue-dark);">${targetUserObjMatchRecord.country || 'N/A'} (${targetUserObjMatchRecord.dialingCode || ''})</span></p>
                  ${subAccountClassificationMetadataDetailsBlockHTML}
             </div>
             
