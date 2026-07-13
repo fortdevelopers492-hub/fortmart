@@ -263,12 +263,13 @@ body {
 .settings-content-pane { height: 100%; padding-right: 4px; }
 .settings-sub-panel h2 { font-size: 1.3rem; color: var(--fort-blue-primary); margin-bottom: 18px; font-weight: 800; }
 .profile-photo-center-block { margin-bottom: 24px; position: relative; }
-.large-avatar-frame { width: 100px; height: 100px; margin: 0 auto; border: 3px solid var(--fort-blue-light); position: relative; cursor: pointer; overflow: hidden; background-color: #edf2f7; }
-.large-avatar-frame img { width: 100%; height: 100%; object-fit: cover; }
 .pencil-overlay-icon { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,51,102,0.7); color: #fff; font-size: 0.75rem; padding: 4px 0; font-weight: bold; }
 .detail-row-item { margin-bottom: 16px; }
 .detail-row-item label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--fort-gray-slate); text-transform: uppercase; margin-bottom: 4px; }
 .editable-field-row { display: flex; align-items: center; justify-content: space-between; background-color: var(--fort-white-snow); padding: 10px 14px; border: 1px solid var(--fort-gray-border); border-radius: 6px; }
+.detail-row-item-second { margin-bottom: 16px; }
+.detail-row-item-second label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--fort-gray-slate); text-transform: uppercase; margin-bottom: 4px; }
+
 
 /* Messenger Realtime Workspace Visual Pipeline Interface Layout Specifications */
 .pane-header { padding: 16px; border-bottom: 1px solid var(--fort-gray-border); background-color: var(--fort-white-snow); }
@@ -544,8 +545,6 @@ body {
 /* Individual Product Module Sections Architecture Viewports */
 .website-section-layout { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; width: 100%; }
 .website-meta-side { display: flex; gap: 24px; width: 100%; align-items: flex-start; }
-.large-avatar-frame { width: 120px; height: 120px; background-color: #fff; padding: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.large-avatar-frame img { width: 100%; height: 100%; object-fit: contain; }
 .website-info-block { flex: 1; }
 .website-info-block h3 { font-size: 1.4rem; color: var(--fort-blue-primary); font-weight: 800; }
 .website-info-block p { font-size: 1rem; color: var(--fort-blue-dark); line-height: 1.6; }
@@ -579,9 +578,6 @@ body {
     width: 100%;
     max-width: 1000px;
 }
-
-.large-avatar-frame-fortdev { width: 120px; height: 120px; background-color: #fff; padding: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.large-avatar-frame-fortdev img { width: 100%; height: 100%; object-fit: contain; }
 
 .header-inline-edit-row-fortdev { display: flex; align-items: center; gap: 12px; }
 
@@ -1005,4 +1001,73 @@ body {
         background: var(--fort-blue-light, #3182ce) !important;
         border-radius: 10px !important;
     }
+}
+
+/* ==========================================================================
+   Responsive Chat Input & Send Button Fix
+   ========================================================================== */
+@media (max-width: 768px) {
+    /* 1. Target your exact input bar container class from your HTML code */
+    .chat-input-row-bar {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+        padding: 8px 12px !important; /* Proper defensive screen padding spacing */
+        box-sizing: border-box !important;
+        gap: 8px !important; /* Strict tracking gap between field and send button */
+    }
+
+    /* 2. Target the text input field via its structural ID */
+    #chat-text-input-field {
+        flex: 1 1 auto !important; /* Dynamically grows and shrinks to take up available space */
+        min-width: 0 !important;   /* Breaks the native browser text-input minimum sizing boundary width */
+        box-sizing: border-box !important;
+    }
+
+    /* 3. Target the send button inside the message row container precisely */
+    .chat-input-row-bar .btn-blue {
+        flex: 0 0 auto !important;  /* Strict rule: never allow the send button to squish or contract */
+        white-space: nowrap !important; /* Prevents text from wrapping into multiple broken lines */
+        margin-left: auto !important;   /* Pins layout cleanly to the extreme right margin edge */
+    }
+}
+
+/* ==========================================================================
+   Unified Profile Avatar Frames (Settings, Website & FortDev Views)
+   ========================================================================== */
+
+/* 1. Base / Settings View: Default 100px Circular Frame */
+.large-avatar-frame,
+.large-avatar-frame-fortdev { 
+    width: 100px; 
+    height: 100px; 
+    margin: 0 auto; 
+    border: 3px solid var(--fort-blue-light); 
+    position: relative; 
+    cursor: pointer; 
+    overflow: hidden; 
+    background-color: #edf2f7; 
+    border-radius: 50%; /* Forces perfect circle */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 2. Website View Variant: Overrides base styles for the 120px layout version */
+.large-avatar-frame.website-variant {
+    width: 120px; 
+    height: 120px; 
+    background-color: #fff; 
+    padding: 10px; 
+    flex-shrink: 0; 
+    border: none; /* Removes the blue border for the product page layout if needed */
+}
+
+/* 3. Core Image Fitting: Applied universally across all variations */
+.large-avatar-frame img,
+.large-avatar-frame-fortdev img { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; /* Crops image cleanly to circle boundaries without distortion */
 }

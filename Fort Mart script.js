@@ -643,6 +643,8 @@ function finalizeSuccessfulAuthenticationSequence(accountRecordMatch) {
         userAvatarFrame.src = accountRecordMatch.avatar || "fort mart logo.png";
     }
     
+    syncDrawerGuestTerminalNodeToActiveUser();
+
     const welcomeModal = document.getElementById("welcome-modal");
     if (welcomeModal) {
         welcomeModal.classList.add("active");
@@ -1203,7 +1205,13 @@ function renderForgotPasswordModalWorkflow() {
         
         <div class="form-input-container margin-top-sm">
             <label style="font-size:0.82rem; font-weight:700; color:var(--fort-gray-slate);">Country Code:</label>
-            <input type="text" id="forgot-country" class="form-field-control" placeholder="+234" value="+234">
+            <select id="forgot-country" class="form-field-control">
+                <option value="+234" selected>Nigeria (+234)</option>
+                <option value="+1">United States / Canada (+1)</option>
+                <option value="+44">United Kingdom (+44)</option>
+                <option value="+254">Kenya (+254)</option>
+                <option value="+27">South Africa (+27)</option>
+            </select>
         </div>
 
         <div class="form-input-container margin-top-xs">
@@ -1377,7 +1385,7 @@ function renderForgotPasswordOtpVerificationLayout() {
     const maskedTargetEmail = SIGNUP_WIZARD_TEMPORARY_OBJECT.resetTargetEmail;
 
     const secondsLeft = SIGNUP_WIZARD_TEMPORARY_OBJECT.otpCooldownSecondsLeft || 0;
-    const textLabel = secondsLeft > 0 ? `Resend in ${secondsLeft}s` : "resend";
+    const textLabel = secondsLeft > 0 ? `Resend in ${secondsLeft}s` : "Resend";
     const opacityStyle = secondsLeft > 0 ? "0.5" : "1";
     const weightStyle = secondsLeft > 0 ? "400" : "600";
     const pointerEventsStyle = secondsLeft > 0 ? "none" : "auto";
@@ -1508,11 +1516,19 @@ async function executeCommitNewPasswordToSystemDatabase() {
             SYSTEM_DATABASE.users[accountIndexId].password = p1; 
             
             APP_STATE.currentUser = SYSTEM_DATABASE.users[accountIndexId];
-            syncPlatformDatabaseStateToWebStorage();
+            
+            if (typeof syncPlatformDatabaseStateToWebStorage === "function") {
+                syncPlatformDatabaseStateToWebStorage();
+            }
             
             closeActiveModalDirectly('auth-modal');
-            document.getElementById("welcome-modal").classList.add("active");
-            renderMarketplaceProductsDisplayLoop();
+            
+            const welcomeModal = document.getElementById("welcome-modal");
+            if (welcomeModal) welcomeModal.classList.add("active");
+            
+            if (typeof renderMarketplaceProductsDisplayLoop === "function") {
+                renderMarketplaceProductsDisplayLoop();
+            }
             
         } catch (firebaseErr) {
             console.error("Firebase cloud update sequence exception trace reported:", firebaseErr);
@@ -2684,6 +2700,8 @@ function executeMessageTextCopyClipboard(messageIdentifierKey) {
             console.error("System Matrix Clipboard Exception Handling Log:", err);
         });
     }
+
+    alert("Text Copied Successfully");
 }
 
 async function executeSelectedBubbleMessagePurge(messageIdentifierKey) {
@@ -2742,7 +2760,7 @@ function executeAutoReplyEvaluationProcessFrame(operationalThreadRecordData) {
                     await addDoc(collection(db, "messages"), {
                         chatId: operationalThreadRecordData.chatId,
                         senderUid: counterpartyAccountProfile.uid,
-                        text: `[Automated Assistant System Broadcast Response Mapping Engine Log]: Thank you for reaching out to ${counterpartyAccountProfile.businessName || counterpartyAccountProfile.identityName}. Your commercial request lines have been safely indexed. We will get back to you soon.`,
+                        text: `[Automated Reply]: Thank you for reaching out to ${counterpartyAccountProfile.businessName || counterpartyAccountProfile.identityName}. We will get back to you soon.`,
                         status: "bold-double",
                         isFile: false,
                         isImage: false,
@@ -3199,6 +3217,10 @@ function openProfileEditWizard(targetFieldNameStringTokenKey) {
             <label for="chk-signin-showpass" style="font-size: 0.8rem; font-weight: 400; cursor: pointer; user-select: none;">Show Password</label>
         </div>
 
+        <div class="text-center margin-top-xs">
+            <span style="color:var(--fort-blue-light); cursor:pointer; font-size:0.9rem;" onclick="renderForgotPasswordModalWorkflow()">Forgot Password?</span>
+        </div>
+
         <div class="btn-group margin-top-md">
             <button onclick="closeActiveModalDirectly('auth-modal')" class="btn-gray">Cancel</button>
             <button onclick="executeVerifyProfileReauthCredentialPasswordMatch('${targetFieldNameStringTokenKey}')" class="btn-blue">Verify Password</button>
@@ -3511,6 +3533,92 @@ async function executeSaveProfileWizardModificationsToDatabase(targetFieldNameSt
         console.error("Firebase Cloud Storage Core Fields Overwrite Failure Event Exception:", cloudWriteExceptionError);
         alert("Cloud transaction boundary mismatch runtime error. Check device tracking configurations.");
     }
+}
+
+/**
+ * CORE MODULE FIREBASE SYNC: Fetches and displays the logged-in user's 
+ * products in real-time from the Firestore collection.
+ */
+function renderAccountInventoryLedgerManagementDashboardGrid() {
+    const listContainerNodeElement = document.getElementById("my-products-list-container");
+    if (!listContainerNodeElement) return;
+    
+    listContainerNodeElement.innerHTML = "";
+    
+    if (!APP_STATE.currentUser) return;
+
+    // Check availability of Firebase configuration instances
+    if (window.FortMartFirebase || window.firebase) {
+        const dbRefInstance = window.FortMartFirebase ? window.FortMartFirebase.db : window.firebase.firestore();
+        
+        if (window.FortMartFirebase) {
+            const { collection, query, where, onSnapshot } = window.FortMartFirebase;
+            
+            // Build query matching owner UID parameters
+            const userProductsQuery = query(
+                collection(dbRefInstance, "products"), 
+                where("ownerUid", "==", APP_STATE.currentUser.uid)
+            );
+            
+            // Establish real-time listener context
+            onSnapshot(userProductsQuery, (querySnapshot) => {
+                populateDashboardInventoryGridItems(listContainerNodeElement, querySnapshot);
+            }, (error) => {
+                console.error("Error listening to user products stream:", error);
+            });
+        } else {
+            // Legacy Firebase SDK Firestore implementation
+            dbRefInstance.collection("products")
+                .where("ownerUid", "==", APP_STATE.currentUser.uid)
+                .onSnapshot((querySnapshot) => {
+                    populateDashboardInventoryGridItems(listContainerNodeElement, querySnapshot);
+                }, (error) => {
+                    console.error("Error fetching user products collection snapshot:", error);
+                });
+        }
+    }
+}
+
+/**
+ * Helper utility to build the individual DOM elements from database snapshot payloads
+ */
+function populateDashboardInventoryGridItems(containerElement, querySnapshot) {
+    containerElement.innerHTML = "";
+    
+    if (querySnapshot.empty) {
+        containerElement.innerHTML = `<div style="padding:16px; color:var(--fort-gray-slate); font-size:0.85rem;"><p>You have no posted products.</p></div>`;
+        return;
+    }
+    
+    querySnapshot.forEach((docSnapshot) => {
+        const item = docSnapshot.data();
+        const productId = docSnapshot.id; // Extract doc id string from Firebase collection reference
+        
+        const itemRowRowStripContainerElementNode = document.createElement("div");
+        itemRowRowStripContainerElementNode.className = "rounded-rect";
+        itemRowRowStripContainerElementNode.style.display = "flex";
+        itemRowRowStripContainerElementNode.style.alignItems = "center";
+        itemRowRowStripContainerElementNode.style.justifyContent = "between";
+        itemRowRowStripContainerElementNode.style.padding = "12px";
+        itemRowRowStripContainerElementNode.style.border = "1px solid var(--fort-gray-border)";
+        itemRowRowStripContainerElementNode.style.marginBottom = "10px";
+        itemRowRowStripContainerElementNode.style.backgroundColor = "var(--fort-white-snow)";
+        
+        itemRowRowStripContainerElementNode.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px; flex:1;">
+                <img src="${item.coverPhoto || ''}" style="width:40px; height:40px; object-fit:cover;" class="rounded-rect" alt="Thumb">
+                <div>
+                    <h5 style="font-weight:700; color:var(--fort-blue-dark);">${item.name || 'Unnamed Product'}</h5>
+                    <span style="font-size:0.75rem; color:var(--fort-gray-slate);">Category: ${item.category || 'Others'} | Analytics Metrics Hits Counter Value: ${item.clickCount || 0} hits</span>
+                </div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn-blue" style="padding:4px 10px; font-size:0.75rem;" onclick="launchEditProductInventoryModalFormLayoutShell('${productId}')">Edit Details</button>
+                <button class="btn-danger" style="padding:4px 10px; font-size:0.75rem;" onclick="executeDeletePlatformInventoryItemListingPostRecord('${productId}')">Delete Inventory Post</button>
+            </div>
+        `;
+        containerElement.appendChild(itemRowRowStripContainerElementNode);
+    });
 }
 
 /**
@@ -3931,7 +4039,7 @@ function executeFilteringSettingsContentPaneRowsNodesDisplay(searchQueryStringTe
 
 /**
  * Detailed Profile Presentation Context Overlay Summary Modal Processing Architecture Engine
- * Renders extended data layouts, business certificates, or metrics parameters for a given user profile.
+ * Renders extended data layouts, business certificates, metrics parameters, and product lists for a given user profile.
  */
 function launchDetailedUserProfileContextOverlaySummaryModal(userIdTokenKeyParameterValue) {
     const targetUserObjMatchRecord = SYSTEM_DATABASE.users.find(u => u.uid === userIdTokenKeyParameterValue || u.id === userIdTokenKeyParameterValue);
@@ -3957,7 +4065,7 @@ function launchDetailedUserProfileContextOverlaySummaryModal(userIdTokenKeyParam
          `;
     }
 
-    // --- INTEGRATION: INLINE ADMINISTRATIVE CONTROL LAYER ---
+    // --- ADMINISTRATIVE CONTROL LAYER LINKED DIRECTLY TO EXECUTEINLINEADMINSAVE ---
     let administrativeControlsInlineHTML = "";
     if (APP_STATE.currentUser && (APP_STATE.currentUser.uid === 'admin' || APP_STATE.currentUser.id === 'admin')) {
         const rawVerificationCode = targetUserObjMatchRecord.UserAccountAuthenticationVerificationCode || targetUserObjMatchRecord.verificationCode || 'N/A';
@@ -3965,7 +4073,7 @@ function launchDetailedUserProfileContextOverlaySummaryModal(userIdTokenKeyParam
         const currentAccountType = targetUserObjMatchRecord.accountType || targetUserObjMatchRecord.type || 'personal';
         const registrationContactIdentifier = targetUserObjMatchRecord.identifierText || '';
         const securityAccessPassword = targetUserObjMatchRecord.secretKey || targetUserObjMatchRecord.password || '';
-
+        
         administrativeControlsInlineHTML = `
             <div style="margin-top:12px; margin-bottom:12px; padding:14px; background:#f7fafc; border:1px solid #cbd5e0; border-radius:8px; display:flex; flex-direction:column; gap:10px;">
                 <h5 style="margin:0; text-transform:uppercase; font-size:0.75rem; color:var(--fort-gray-slate); letter-spacing:0.5px;">🛡️ Administrative Console Workspace</h5>
@@ -3975,7 +4083,6 @@ function launchDetailedUserProfileContextOverlaySummaryModal(userIdTokenKeyParam
                         <span style="font-size:0.82rem; color:var(--fort-gray-slate); font-weight:700;">Registration Contact (Email / Phone):</span>
                         <input type="text" id="adm-user-identifier-text" class="form-field-control" style="margin-top:4px; font-family:monospace;" value="${registrationContactIdentifier}">
                     </div>
-          
                     <div style="flex:1;">
                         <span style="font-size:0.82rem; color:var(--fort-gray-slate); font-weight:700;">Account Password:</span>
                         <input type="text" id="adm-user-security-password" class="form-field-control" style="margin-top:4px; font-family:monospace;" value="${securityAccessPassword}">
@@ -3994,165 +4101,93 @@ function launchDetailedUserProfileContextOverlaySummaryModal(userIdTokenKeyParam
                         <option value="business" ${currentAccountType === 'business' ? 'selected' : ''}>Business (Commercial) Account</option>
                     </select>
                 </div>
-
+                
                 <div style="font-size:0.82rem; color:var(--fort-blue-dark); margin-top:2px;">
-                    Current Status Boundary: <strong id="lbl-inspector-active-status-tag" style="text-transform:uppercase; color:var(--fort-blue-primary);">${currentGovernanceStatus}</strong>
-                </div>
-
-                <div style="display:flex; gap:8px; margin-top:4px;">
-                    <button type="button" class="btn-sm-pencil" style="flex:1; font-weight:700; padding:8px; cursor:pointer; text-transform:uppercase; font-size:0.75rem;" 
-                        onclick="executeTriggerGovernanceStatusSelectionModal('${targetUserObjMatchRecord.uid || targetUserObjMatchRecord.id}')">
-                        🔄 Change Status
-                    </button>
-                    <button type="button" class="btn-danger" style="padding:8px 12px; font-weight:700; font-size:0.75rem; text-transform:uppercase;" 
-                        onclick="closeActiveModalDirectly('product-detail-modal'); executeAdminPurgeAccountCompletelyFromDatabase('${targetUserObjMatchRecord.uid || targetUserObjMatchRecord.id}')"
-                        ${(targetUserObjMatchRecord.id === 'u1' || targetUserObjMatchRecord.uid === 'admin' || targetUserObjMatchRecord.id === 'admin') ? 'disabled' : ''}>
-                        🗑️ Delete User
-                    </button>
+                    Current Status Boundary: <strong id="lbl-inspector-active-status-tag" data-pending-status-value="${currentGovernanceStatus}" style="text-transform:uppercase;">${currentGovernanceStatus}</strong>
                 </div>
                 
-                <button type="button" class="btn-blue" style="width:100%; padding:8px; font-weight:700; font-size:0.75rem; text-transform:uppercase; margin-top:2px;"
-                    onclick="executeInlineAdminSave('${targetUserObjMatchRecord.uid || targetUserObjMatchRecord.id}')">
-                    💾 Save Admin Changes
-                </button>
+                <div class="btn-group" style="margin-top:4px;">
+                    <button class="btn-blue" style="padding:6px 12px; font-size:0.8rem;" onclick="executeInlineAdminSave('${targetUserObjMatchRecord.uid || targetUserObjMatchRecord.id}')">Apply Policy Changes</button>
+                    <button class="btn-gray" style="padding:6px 12px; font-size:0.8rem;" onclick="(() => {
+                        const tag = document.getElementById('lbl-inspector-active-status-tag');
+                        if (tag) {
+                            const currentVal = tag.getAttribute('data-pending-status-value') || 'unverified';
+                            const nextStatus = currentVal.toLowerCase() === 'verified' ? 'unverified' : 'verified';
+                            tag.setAttribute('data-pending-status-value', nextStatus);
+                            tag.textContent = nextStatus;
+                        }
+                    })()">Toggle Verification Identity State</button>
+                </div>
             </div>
         `;
     }
+
+    // --- USER'S PRODUCTS GRID VIEW LOOP LAYER ---
+    let userProductsListHTML = "";
+    if (targetUserObjMatchRecord.accountType === 'business' || targetUserObjMatchRecord.type === 'business') {
+        let currencySymbol = (APP_STATE.currentUser && APP_STATE.currentUser.country === 'Nigeria') ? '₦' : '$';
+        const sellerProducts = SYSTEM_DATABASE.products.filter(p => p.ownerUid === targetUserObjMatchRecord.uid || p.ownerUid === targetUserObjMatchRecord.id);
+        
+        let productsGridItemsHTML = "";
+        if (sellerProducts.length > 0) {
+            sellerProducts.forEach(product => {
+                const imgUrl = product.coverPhoto || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cbd5e0'><path d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/></svg>";
+                productsGridItemsHTML += `
+                    <div class="profile-product-item-row" style="display:flex; align-items:center; gap:12px; padding:8px; background:var(--fort-white-snow); border:1px solid var(--fort-gray-border); border-radius:6px; cursor:pointer; transition:background 0.2s;" onclick="launchComprehensiveProductSpecificationsExpandedModalView('${product.pid}')" onmouseover="this.style.background='#f0f4f8'" onmouseout="this.style.background='var(--fort-white-snow)'">
+                        <img src="${imgUrl}" style="width:50px; height:50px; object-fit:contain; border-radius:4px; background:#fcfcfc; border:1px solid #e2e8f0;" alt="${product.name}">
+                        <div style="flex:1; min-width:0;">
+                            <h4 style="margin:0; font-size:0.9rem; color:var(--fort-blue-dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${product.name}</h4>
+                            <div style="font-size:0.85rem; font-weight:700; color:var(--fort-blue-light); margin-top:2px;">${currencySymbol}${product.price.toLocaleString()}</div>
+                        </div>
+                        <span style="font-size:1.1rem; color:var(--fort-gray-slate); padding-right:4px;">›</span>
+                    </div>
+                `;
+            });
+        } else {
+            productsGridItemsHTML = `<p style="font-size:0.88rem; color:var(--fort-gray-slate); font-style:italic; margin:0; padding:4px;">This business user hasn't uploaded any active product catalog listings yet.</p>`;
+        }
+
+        userProductsListHTML = `
+            <div class="user-products-section-block" style="margin-top:14px; margin-bottom:14px;">
+                <h5 style="text-transform:uppercase; font-size:0.75rem; color:var(--fort-gray-slate); letter-spacing:0.5px; margin-bottom:8px;">Active Product Catalog Roster (${sellerProducts.length})</h5>
+                <div style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto; padding-right:4px;">
+                    ${productsGridItemsHTML}
+                </div>
+            </div>
+        `;
+    }
+
+    let userProfilePhotoSrc = targetUserObjMatchRecord.avatar || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a0aec0'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>";
     
     standardModalBodyElementNode.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:5px; text-align:left;">
-            <div style="display:flex; align-items:center; gap:12px; padding-bottom:10px; border-bottom:1px solid var(--fort-gray-border);">
-                 <img src="${targetUserObjMatchRecord.avatar || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23718096\'><path d=\'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z\'/></svg>'}" style="width:55px; height:55px; object-fit:cover; border-radius:50%; border:2px solid var(--fort-blue-primary);" alt="User Avatar">
-                 <div>
-                     <h4 style="color:var(--fort-blue-dark); font-weight:800; font-size:1.15rem; margin:0;">${(targetUserObjMatchRecord.accountType === 'business' || targetUserObjMatchRecord.type === 'business') ? targetUserObjMatchRecord.businessName : (targetUserObjMatchRecord.identityName || targetUserObjMatchRecord.username)}</h4>
-                     <p style="font-size:0.75rem; color:var(--fort-gray-slate); font-weight:600; text-transform:uppercase; margin-top:2px;">Classification Tier Status Signature: <span class="profile-mode-tag-label ${(targetUserObjMatchRecord.accountType === 'business' || targetUserObjMatchRecord.type === 'business') ? 'business' : 'personal'}">${targetUserObjMatchRecord.accountType || targetUserObjMatchRecord.type}</span></p>
-                 </div>
+        <div class="modal-expanded-header-row" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--fort-gray-border); padding-bottom:14px;">
+            <h3>User Profile Identity Summary Context</h3>
+            <button onclick="closeActiveModalDirectly('product-detail-modal')" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">✕</button>
+        </div>
+        
+        <div class="modal-expanded-content-split-grid margin-top-md" style="display:grid; grid-template-columns: 100px 1fr; gap:20px; align-items:start;">
+            <div class="profile-left-avatar-frame">
+                <img src="${userProfilePhotoSrc}" class="circle-container" style="width:100px; height:100px; object-fit:cover; border:2px solid var(--fort-blue-primary);" alt="User Profile Master Photo">
             </div>
             
-            <div class="margin-top-sm" style="display:flex; flex-direction:column; gap:8px;">
-                 ${administrativeControlsInlineHTML}
-                 <p style="font-size:0.85rem; color:var(--fort-gray-slate); font-weight:600; margin-top:2px;">Country (Dailing Code): <span style="color:var(--fort-blue-dark);">${targetUserObjMatchRecord.country || 'N/A'} (${targetUserObjMatchRecord.dialingCode || ''})</span></p>
-                 ${subAccountClassificationMetadataDetailsBlockHTML}
-            </div>
-            
-            <div class="btn-group margin-top-md" style="justify-content:center;">
-                 ${(APP_STATE.currentUser && APP_STATE.currentUser.uid !== targetUserObjMatchRecord.uid && APP_STATE.currentUser.id !== targetUserObjMatchRecord.uid) ? 
-                    `<button class="btn-blue" onclick="closeActiveModalDirectly('product-detail-modal'); initialDirectMessageCommunicationPipelineSetup('${targetUserObjMatchRecord.uid || targetUserObjMatchRecord.id}')">💬 Message</button>` : ''
-                 }
-                <button class="btn-gray" onclick="closeActiveModalDirectly('product-detail-modal')">Leave</button>
+            <div class="profile-right-fields-column" style="display:flex; flex-direction:column;">
+                <h2 style="color:var(--fort-blue-dark); font-weight:800; margin:0;">${targetUserObjMatchRecord.identityName || ''}</h2>
+                <span style="font-size:0.82rem; color:var(--fort-gray-slate); margin-top:2px;">Account Boundary Class: <strong style="text-transform:uppercase;">${targetUserObjMatchRecord.accountType || targetUserObjMatchRecord.type || 'personal'}</strong></span>
+                <span style="font-size:0.82rem; color:var(--fort-gray-slate); margin-top:2px;">Operational Country Localization Region: <strong>${targetUserObjMatchRecord.country || 'Nigeria'}</strong></span>
+                
+                ${subAccountClassificationMetadataDetailsBlockHTML}
+                ${administrativeControlsInlineHTML}
+                ${userProductsListHTML}
+                
+                <div class="modal-expanded-actions-footer-row btn-group" style="margin-top:12px; padding-top:14px; border-top:1px solid #f0f0f0;">
+                    <button class="btn-gray" onclick="closeActiveModalDirectly('product-detail-modal')">Close</button>
+                    ${(APP_STATE.currentUser && APP_STATE.currentUser.uid !== targetUserObjMatchRecord.uid) ? `<button class="btn-blue" onclick="closeActiveModalDirectly('product-detail-modal'); initialDirectMessageCommunicationPipelineSetup('${targetUserObjMatchRecord.uid || targetUserObjMatchRecord.id}')">💬 Message User</button>` : ''}
+                </div>
             </div>
         </div>
     `;
+    
     document.getElementById("product-detail-modal").classList.add("active");
-}
-
-/**
- * Commits administrative code alterations, status values, and account classification switches.
- * Syncs structural profile state directly back to the live Firestore Database instance based on UID.
- */
-async function executeInlineAdminSave(userId) {
-    const accountInstance = SYSTEM_DATABASE.users.find(u => u.id === userId || u.uid === userId);
-    if (!accountInstance) return;
-
-    // 1. Process status tracking strings
-    const cachedStatusElement = document.getElementById("lbl-inspector-active-status-tag");
-    const evaluatedStatusValue = cachedStatusElement && cachedStatusElement.getAttribute("data-pending-status-value") 
-        ? cachedStatusElement.getAttribute("data-pending-status-value") 
-        : (accountInstance.verificationStatus || accountInstance.status || 'unverified');
-
-    accountInstance.verificationStatus = evaluatedStatusValue;
-    accountInstance.status = evaluatedStatusValue;
-
-    // 2. Process manual identifier Text updates (Email / Phone)
-    const inputIdentifierField = document.getElementById("adm-user-identifier-text");
-    if (inputIdentifierField) {
-        const structuralIdentifierValue = inputIdentifierField.value.trim();
-        accountInstance.identifierText = structuralIdentifierValue; 
-    }
-
-    // 3. Process manual password updates
-    const inputPasswordField = document.getElementById("adm-user-security-password");
-    if (inputPasswordField) {
-        const operationalPasswordValue = inputPasswordField.value.trim();
-        accountInstance.secretKey = operationalPasswordValue;
-        accountInstance.password = operationalPasswordValue; 
-    }
-
-    // 4. Process manual code variables alterations
-    const inputCodeField = document.getElementById("UserAccountAuthenticationVerificationCode");
-    if(inputCodeField) {
-        const boundValue = inputCodeField.value.trim();
-        accountInstance.UserAccountAuthenticationVerificationCode = boundValue;
-        accountInstance.verificationCode = boundValue;
-    }
-
-    // 5. Process account type change toggles
-    const accountTypeSelectField = document.getElementById("adm-change-account-type");
-    if(accountTypeSelectField) {
-        const selectedType = accountTypeSelectField.value;
-        accountInstance.accountType = selectedType;
-        accountInstance.type = selectedType;
-        
-        if (selectedType === 'business') {
-            if (!accountInstance.businessName) {
-                accountInstance.businessName = accountInstance.identityName || accountInstance.username || "Corporate Entity";
-            }
-            if (!accountInstance.businessInfo) {
-                accountInstance.businessInfo = "Commercial business distribution account profile workspace.";
-            }
-        }
-    }
-
-    // --- FIREBASE MATRIX CLOUD INTEGRATION SYNC LAYER ---
-    try {
-        if (window.FortMartFirebase) {
-            const { db, doc, setDoc } = window.FortMartFirebase;
-            
-            // Generate standard payload mapped identically to database keys schema
-            const firebasePayload = {
-                verificationStatus: accountInstance.verificationStatus,
-                status: accountInstance.status,
-                identifierText: accountInstance.identifierText || "",
-                secretKey: accountInstance.secretKey || "",
-                password: accountInstance.password || "",
-                UserAccountAuthenticationVerificationCode: accountInstance.UserAccountAuthenticationVerificationCode || "",
-                verificationCode: accountInstance.verificationCode || "",
-                accountType: accountInstance.accountType,
-                type: accountInstance.type
-            };
-
-            // Include business sub-parameters structural tracking properties if applicable
-            if (accountInstance.accountType === 'business') {
-                firebasePayload.businessName = accountInstance.businessName;
-                firebasePayload.businessInfo = accountInstance.businessInfo;
-            }
-
-            // Target the user profile document dynamically using the unified identification token string
-            await setDoc(doc(db, "users", userId), firebasePayload, { merge: true });
-            console.log(`Cloud sync execution loop complete. Matrix rows updated successfully for profile ID: ${userId}`);
-        }
-    } catch (err) {
-        console.error("Critical infrastructure error pushing admin mutation trace to Firebase vectors:", err);
-    }
-
-    // Sync modifications into alternative fallback web state storage containers
-    if (typeof syncPlatformDatabaseStateToWebStorage === "function") {
-        syncPlatformDatabaseStateToWebStorage();
-    } else if (typeof commitDatabasesStateToLocalStorage === "function") {
-        commitDatabasesStateToLocalStorage();
-    }
-    
-    if (typeof renderAdminUsersManagementList === "function") {
-        renderAdminUsersManagementList();
-    }
-
-    closeActiveModalDirectly("product-detail-modal");
-    
-    if (typeof showAlertModal === "function") {
-        showAlertModal("Overwrites Saved", "Target credentials variables, account type matrices, and identity parameters permanently written to the registry.");
-    } else {
-        alert("Overwrites Saved successfully.");
-    }
 }
 
 /**
@@ -4246,5 +4281,45 @@ function performGlobalSessionPurge() {
     // 8. Re-trigger the authentication initialization gate to show the clean Sign-In card panel
     if (typeof triggerAuthenticationModalSequence === 'function') {
         triggerAuthenticationModalSequence();
+    }
+}
+
+/**
+ * Updates the user drawer terminal node values based on the active authenticated session state data
+ */
+function syncDrawerGuestTerminalNodeToActiveUser() {
+    // Ensure there is an active logged-in user available
+    if (!APP_STATE || !APP_STATE.currentUser) {
+        return;
+    }
+
+    const currentAccount = APP_STATE.currentUser;
+    
+    // 1. Resolve DOM node elements references matching target layout criteria
+    const drawerAvatarNode = document.getElementById("drawer-user-avatar-frame-node");
+    
+    // 2. Locate h4 label component and span label component relative to parent layout container card
+    const headerCardPane = document.querySelector(".drawer-header-pane-card");
+    
+    if (headerCardPane) {
+        const nameHeadingNode = headerCardPane.querySelector("h4");
+        const statusSpanNode = headerCardPane.querySelector("span");
+        
+        // Update user identity display text label strings context definitions
+        if (nameHeadingNode) {
+            nameHeadingNode.innerText = currentAccount.identityName; // Changes "Guest Terminal Node" to actual name
+        }
+        
+        if (statusSpanNode) {
+            statusSpanNode.innerText = "Logged In Active"; // Changes status
+            // Optional: add active system theme layout modification class styles here
+            statusSpanNode.style.color = "#48bb78"; // Light green indicating active online node state tracking
+        }
+    }
+
+    // 3. Update profile avatar display image resource mapping strings fallback paths
+    if (drawerAvatarNode) {
+        drawerAvatarNode.src = currentAccount.avatar || 
+        "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>";
     }
 }
