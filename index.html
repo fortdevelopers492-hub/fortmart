@@ -97,12 +97,23 @@
         });
     })();
     </script>
+    <script src="https://js.paystack.co/v2/inline.js"></script>
 
     <!-- 3. Finally load your main logic file -->
     <script src="Fort Mart script.js"></script>
     
 </head>
 <body class="mode-laptop">
+
+    <div id="preloader-container">
+        <img src="fort mart logo.png" alt="Fort Mart Logo" class="preloader-logo">
+        
+        <div class="progress-meter-container">
+            <div id="preloader-progress-bar" class="progress-meter-bar"></div>
+        </div>
+        
+        <div id="preloader-percentage-text" class="preloader-text">Loading 0%</div>
+    </div>
 
     <!-- Universal Custom Modal Alert Hook Target Box Container Context Matrix Grid Element -->
     <div id="alert-modal-hook-element" class="modal-overlay">
@@ -173,7 +184,7 @@
                     <img id="drawer-user-avatar-frame-node" src="Fort Mart Logo Circle Cropped.png" alt="document.getElementById("drawer-user-avatar)">
                     <div style="overflow: hidden;">
                         <h4 id="drawer-user-identity-fullname-lbl" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--fort-blue-dark); font-weight: 700;">Guest Terminal Node</h4>
-                        <span id="drawer-user-classification-badge-lbl" class="profile-mode-tag-label personal">Offline Sandbox Mode</span>
+                        <span id="drawer-user-classification-badge-lbl" class="profile-mode-tag-label personal">Logged Out (Guest)</span>
                     </div>
                 </div>
                 <ul class="drawer-links">
@@ -182,6 +193,9 @@
                     <li id="nav-item-my-account" onclick="navigateToPage('my-account')">⚙️ My Account Settings</li>
                     <li id="admin-nav-item" class="hidden-admin-node" onclick="navigateToPage('admin-dashboard')">🛡️ Admin Dashboard</li>
                     <br>
+                    <div id="justForButton" class="drawer-links-three">
+                        <button id="changeable-logout-btn" onclick="doubleButtonFunction()" class="btn-blue">Sign in</button>
+                    </div>
                     <button onclick="toggleSideDrawer()" class="btn-gray">Close</button>
                 </ul>
             </nav>
@@ -248,7 +262,6 @@
                         <div class="settings-tabs-topbar">
                             <button class="settings-tab-btn active" onclick="switchSettingsSection('account-info')">Profile Information</button>
                             <button class="settings-tab-btn" onclick="switchSettingsSection('my-products')">Manage Posted Products</button>
-                            <button class="settings-tab-btn" onclick="switchSettingsSection('ratings-reviews')">Ratings & Platform Reviews</button>
                             <button class="settings-tab-btn" onclick="switchSettingsSection('more-from-fort')">More from Fort Developers</button>
                         </div>
 
@@ -380,7 +393,7 @@
                                             <div class="section-content-wrapper-fortdev website-section-layout">
                                                 <div class="website-meta-side">
                                                     <div class="large-avatar-frame-fortdev rounded-rect">
-                                                        <img src="fort logo.png" alt="Fort Mart Logo">
+                                                        <img src="Fort Logo Circle Cropped.png" alt="Fort Mart Logo">
                                                     </div>
                                                     <div class="website-info-block-fortdev">
                                                         <div class="header-inline-edit-row-fortdev">
@@ -399,7 +412,7 @@
                                             <div class="section-content-wrapper-fortdev website-section-layout">
                                                 <div class="website-meta-side">
                                                     <div class="large-avatar-frame-fortdev rounded-rect">
-                                                        <img src="fort logo.png" alt="Fort Logo">
+                                                        <img src="Fort Logo Circle Cropped.png" alt="Fort Logo">
                                                     </div>
                                                     <div class="website-info-block-fortdev">
                                                         <div class="header-inline-edit-row-fortdev">

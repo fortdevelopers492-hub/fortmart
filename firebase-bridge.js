@@ -163,7 +163,7 @@ export async function registerNewUserAccountRecord(signUpWizardData, profilePict
         chatId: welcomeChannelId,
         dynamicParticipants: ["admin", uniqueId],
         messageLog: [
-            { mid: "wel1", senderUid: "admin", text: "Thanks for choosing Fort Mart. We are here with an amazing web app when it comes to online shopping. We wish you best of luck as you explore the market.", timestamp: new Date().toISOString(), status: "bold-double" }
+            { mid: "wel1", senderUid: "admin", text: "Thanks for choosing Fort Mart. We are here with an amazing web app when it comes to online shopping. We wish you best of luck as you explore the market.", timestamp: new Date().toISOString(), }
         ]
     };
     await setDoc(doc(db, "chats", welcomeChannelId), systemAdminWelcomeThreadNode);
@@ -276,7 +276,6 @@ export async function postRealtimeConversationMessageNode(chatId, messageTextStr
         storagePath: attachedStoragePath || null,
         hasFile: containsFileFlag,
         timestamp: new Date().toISOString(),
-        status: "bold-double"
     };
 
     const updatedLogArray = [...currentChatInstance.messageLog, newMessageElement];
