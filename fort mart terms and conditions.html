@@ -3,18 +3,374 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="Fort Mart Logo Circle Cropped.png" type="image/png">
+    <link rel="icon" href="Fort Mart Logo No Background.png" type="image/png">
     <title>Fort Mart - Terms and Conditions Legal Context Structure</title>
+    <script>
+        const ad1 = {
+            type: 'image',
+            header: 'Need a Custom Website!',
+            text: 'Try Fort Developers (createawebsite.fort.com)',
+            src: 'flyer fort - landscape.png',
+            url: 'https://createawebsite.fort.com'
+        };
+
+        const ad2 = {
+            type: 'image',
+            header: 'Need a Custom Website!',
+            text: 'Try Fort Developers (createawebsite.fort.com)',
+            src: 'flyer fort - landscape.png',
+            url: 'https://createawebsite.fort.com'
+        };
+
+        const ads = [ad1, ad2];
+
+        function setupAdModal() {
+            // Retrieve previous index from localStorage, or default to -1 if not set
+            let lastIndex = parseInt(localStorage.getItem('lastAdIndex'), 10);
+            if (isNaN(lastIndex)) {
+                lastIndex = -1;
+            }
+
+            // Calculate next index in sequence (loops back to 0 when end is reached)
+            const nextIndex = (lastIndex + 1) % ads.length;
+            
+            // Save current index for the next run
+            localStorage.setItem('lastAdIndex', nextIndex);
+
+            const currentAd = ads[nextIndex];
+
+            const headerEl = document.getElementById('ad-header');
+            const textEl = document.getElementById('ad-text');
+            const mediaContainer = document.getElementById('ad-media-container');
+            const continueBtn = document.getElementById('ad-continue-btn');
+            const visitBtn = document.getElementById('ad-visit-btn');
+
+            // Populate header, text, and visit button
+            headerEl.innerText = currentAd.header;
+            textEl.innerHTML = `<strong>${currentAd.text}</strong>`;
+            
+            if (visitBtn) {
+                visitBtn.href = currentAd.url;
+            }
+
+            mediaContainer.innerHTML = '';
+            
+            // Open URL when clicking the container (opens in new tab)
+            mediaContainer.style.cursor = 'pointer';
+            mediaContainer.onclick = (e) => {
+                // Prevent triggering redirect if the user interacts with video controls
+                if (e.target.tagName !== 'VIDEO') {
+                    window.open(currentAd.url, '_blank', 'noopener,noreferrer');
+                }
+            };
+
+            // Render appropriate media element
+            if (currentAd.type === 'video') {
+                const video = document.createElement('video');
+                video.src = currentAd.src;
+                video.autoplay = true;
+                video.muted = true; // Required for reliable autoplay across browsers
+                video.playsInline = true;
+                video.controls = true;
+                
+                // Open URL when clicking video background without triggering play/pause controls conflict
+                video.addEventListener('click', (e) => {
+                    // If controls area isn't being clicked directly
+                    e.stopPropagation();
+                    window.open(currentAd.url, '_blank', 'noopener,noreferrer');
+                });
+
+                mediaContainer.appendChild(video);
+            } else {
+                const img = document.createElement('img');
+                img.src = currentAd.src;
+                img.alt = currentAd.header;
+                mediaContainer.appendChild(img);
+            }
+
+            // Enforce 7-second timer for ALL ad types
+            continueBtn.disabled = true;
+            let countdown = 7;
+            continueBtn.innerText = `Continue in ${countdown}s`;
+
+            const timer = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    continueBtn.innerText = `Continue in ${countdown}s`;
+                } else {
+                    clearInterval(timer);
+                    continueBtn.disabled = false;
+                    continueBtn.innerText = 'Continue';
+                }
+            }, 1000);
+        }
+
+        function closeActiveModalDirectlyAd(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', setupAdModal);
+    </script>  
     <style>
-        body { font-family: sans-serif; line-height: 1.6; color: #333; padding: 40px; background-color: #f4f7f6; max-width: 800px; margin: 0 auto; }
-        .legal-box { background: #fff; padding: 30px; border-radius: 8px; border: 1px solid #cbd5e0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        h1, h2, h3 { color: #003366; }
-        .back-btn { display: inline-block; background-color: #0288d1; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; margin-bottom: 20px; }
+        /* General Page Styling */
+        body { 
+            font-family: Arial, Helvetica, sans-serif; 
+            line-height: 1.7; 
+            color: #2d3748; 
+            padding: 40px 20px; 
+            background-color: #f4f7f6; 
+            max-width: 900px; 
+            margin: 0 auto; 
+        }
+
+        /* Container Styling */
+        .legal-box { 
+            background: #ffffff; 
+            padding: 40px; 
+            border-radius: 8px; 
+            border: 1px solid #cbd5e0; 
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); 
+        }
+
+        /* Typography */
+        h1 { 
+            color: #003366; 
+            font-size: 2rem; 
+            margin-bottom: 10px; 
+            line-height: 1.3;
+        }
+
+        h2 { 
+            color: #003366; 
+            font-size: 1.4rem; 
+            margin-top: 30px; 
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        h3 { 
+            color: #0288d1; 
+            font-size: 1.15rem; 
+            margin-top: 20px;
+        }
+
+        p, li { 
+            font-size: 1rem; 
+            color: #4a5568; 
+            margin-bottom: 15px; 
+        }
+
+        ul {
+            margin-left: 20px;
+            margin-bottom: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        /* Highlight & Alert Styling */
+        .highlight-clause {
+            background-color: #ebf8ff;
+            border-left: 4px solid #0288d1;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* Back Button Styling */
+        .back-btn { 
+            display: inline-block; 
+            background-color: #0288d1; 
+            color: white; 
+            padding: 12px 24px; 
+            text-decoration: none; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            margin-bottom: 25px; 
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        .back-btn:hover {
+            background-color: #01579b;
+        }
+
+        /* Sub-meta Info */
+        .meta-info {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-bottom: 20px;
+        }
+
+        /* =========================================================
+           RESPONSIVE MEDIA QUERIES FOR SMALLER SCREENS
+           ========================================================= */
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 20px 10px;
+            }
+
+            .legal-box {
+                padding: 25px 15px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            h2 {
+                font-size: 1.2rem;
+            }
+
+            h3 {
+                font-size: 1.05rem;
+            }
+
+            p, li {
+                font-size: 0.92rem;
+                line-height: 1.5;
+            }
+
+            .back-btn {
+                padding: 10px 18px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            body {
+                padding: 10px 5px;
+            }
+
+            .legal-box {
+                padding: 18px 12px;
+                border-radius: 4px;
+            }
+
+            h1 {
+                font-size: 1.25rem;
+            }
+
+            h2 {
+                font-size: 1.05rem;
+            }
+
+            h3 {
+                font-size: 0.95rem;
+            }
+
+            p, li {
+                font-size: 0.85rem;
+            }
+
+            .highlight-clause {
+                padding: 10px 12px;
+            }
+        }
+        /* Media wrapper & elements */
+        .media-container-ad {
+            margin: 15px 0;
+            width: 100%;
+            max-height: 250px;
+            overflow: hidden;
+            border-radius: 6px;
+        }
+
+        .media-container-ad img, 
+        .media-container-ad video {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: cover;
+        }
+
+        /* Button & disabled state styling */
+        .btn-blue-ad {
+            background-color: #007bff;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, opacity 0.2s ease;
+        }
+
+        .btn-blue-ad:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+
+        .btn-blue-ad:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+
+        /* Overlay styling */
+        .modal-overlay-ad {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        /* Modal box container */
+        .modal-box-ad {
+            background-color: #ffffff;
+            padding: 24px;
+            max-width: 450px;
+            width: 90%;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .text-center {
+            text-align: center !important;
+        }
+
+        .rounded-rect {
+            border-radius: 8px;
+            border: 1px solid var(--fort-gray-border);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+        }           
     </style>
 </head>
 <body>
 
-    <a href="index.html" class="back-btn">← Go Back to Fort Mart</a>
+    <div id="ad-modal" class="modal-overlay-ad">
+        <div class="modal-box-ad rounded-rect text-center">
+            <!-- Dynamically injected ad header -->
+            <h2 id="ad-header"></h2>
+            
+            <!-- Dynamically injected ad text -->
+            <p id="ad-text"></p>
+            
+            <!-- Dynamically injected ad media (image or video) -->
+            <div id="ad-media-container" class="media-container-ad"></div>
+            
+            <br>
+            <!-- Modal Action Buttons -->
+            <div class="ad-actions">
+                <!-- Visit / External link button -->
+                <a class="btn-blue-ad" style="text-decoration: none !important;" id="ad-visit-btn" href="#" target="_blank" rel="noopener noreferrer" class="btn-green-ad">Visit Site</a>
+                
+                <!-- Continue / Close button -->
+                <button id="ad-continue-btn" onclick="closeActiveModalDirectlyAd('ad-modal')" class="btn-blue-ad">Continue</button>
+            </div>
+        </div>
+    </div>    
+
+    <a href="fort mart index.html" class="back-btn">← Go Back to Fort Mart</a>
 
     <div class="legal-box">
         <h1>Fort Mart Digital Marketplace Terms and Conditions Core Contract Agreement Clause Sheets</h1>

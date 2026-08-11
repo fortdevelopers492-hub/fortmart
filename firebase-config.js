@@ -97,6 +97,12 @@
       },
       getDownloadURL: (fileRef) => fileRef.getDownloadURL(),
       deleteObject: (fileRef) => fileRef.delete(),
+
+      getCountFromServer: async (queryOrRef) => {
+          // In SDK v10/v12 standard compat mode, count() is available on Query objects:
+          const snapshot = await queryOrRef.count().get();
+          return snapshot.data().count;
+        },      
       
       // Advanced Data Filtering Engine Links wrappers
       query: (collectionRef, ...queryConstraints) => {

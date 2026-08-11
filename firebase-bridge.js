@@ -3,11 +3,18 @@
  */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { 
-    getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc, query, where 
+    getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, deleteDoc, query, where,
+    getCountFromServer 
 } from "https://www.gstatic.com/firebasejs/12.14.0/firestore.js";
-import { 
-    getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject 
-} from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
+
+// Retrieve storage utilities and instance directly from global bridge
+const { 
+    storage, 
+    ref, 
+    uploadBytesResumable, 
+    getDownloadURL, 
+    deleteObject 
+} = window.FortMartFirebase;
 
 // Your explicit project web configuration parameters
 const firebaseConfig = {
@@ -23,7 +30,6 @@ const firebaseConfig = {
 // Initialize Firebase Core Instances
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 // Global state references inherited from your core app layout architecture
 // These variables maintain local synchronization logic to avoid excessive reads
@@ -34,12 +40,15 @@ if (!window.SYSTEM_DATABASE) {
 /**
  * UTILITY: COMPRESS FILE WHEN UPLOADING
  * Downscales images below a target resolution canvas footprint to drastically reduce payload storage pressure.
+ * Returns a raw Blob directly to ensure native compatibility with uploadBytesResumable streams.
  */
 export async function compressVisualImagePayload(file, targetMaxWidth = 800) {
     return new Promise((resolve) => {
-        if (!file.type.startsWith('image/')) {
-            resolve(file); // Return original object if it is a generic chat file zip/pdf document
+        if (!file.type || !file.type.startsWith('image/')) {
+            resolve(file); // Return original File object if non-image format (e.g., zip, pdf)
+            return;
         }
+
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = (event) => {
@@ -61,14 +70,18 @@ export async function compressVisualImagePayload(file, targetMaxWidth = 800) {
                 ctx.drawImage(img, 0, 0, width, height);
                 
                 canvas.toBlob((blob) => {
-                    const compressedFile = new File([blob], file.name, {
-                        type: file.type,
-                        lastModified: Date.now()
-                    });
-                    resolve(compressedFile);
-                }, file.type, 0.75); // Compress with 75% visual output metric quality threshold
+                    if (blob) {
+                        resolve(blob); // Resolves raw Blob directly to prevent upload stream failures
+                    } else {
+                        resolve(file); // Fallback to original file if blob conversion yields null
+                    }
+                }, file.type, 0.75); // Compress with 75% visual output quality metric
             };
+
+            img.onerror = () => resolve(file); // Fallback on image load error
         };
+
+        reader.onerror = () => resolve(file); // Fallback on file read error
     });
 }
 
@@ -163,7 +176,7 @@ export async function registerNewUserAccountRecord(signUpWizardData, profilePict
         chatId: welcomeChannelId,
         dynamicParticipants: ["admin", uniqueId],
         messageLog: [
-            { mid: "wel1", senderUid: "admin", text: "Thanks for choosing Fort Mart. We are here with an amazing web app when it comes to online shopping. We wish you best of luck as you explore the market.", timestamp: new Date().toISOString(), }
+            { mid: "wel1", senderUid: "admin", text: "Thanks for choosing Fort Mart. We are here with an amazing web app when it comes to online shopping. We wish you best of luck as you explore the market.", timestamp: new Date().toISOString() }
         ]
     };
     await setDoc(doc(db, "chats", welcomeChannelId), systemAdminWelcomeThreadNode);
@@ -275,7 +288,7 @@ export async function postRealtimeConversationMessageNode(chatId, messageTextStr
         fileUrl: attachedFileUrl || null,
         storagePath: attachedStoragePath || null,
         hasFile: containsFileFlag,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
     };
 
     const updatedLogArray = [...currentChatInstance.messageLog, newMessageElement];

@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fort Mart - Marketplace & Chat</title>
-    <link rel="icon" href="Fort Mart Logo Circle Cropped.png" type="image/png">
+    <link rel="icon" href="Fort Mart Logo No Background.png" type="image/png">
     <link rel="stylesheet" href="fort mart styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="firebase-bridge.js"></script>
     <script src="firebase-config.js"></script>
     <script>
@@ -115,15 +116,6 @@
         <div id="preloader-percentage-text" class="preloader-text">Loading 0%</div>
     </div>
 
-    <!-- Universal Custom Modal Alert Hook Target Box Container Context Matrix Grid Element -->
-    <div id="alert-modal-hook-element" class="modal-overlay">
-        <div class="modal-box rounded-rect text-center">
-            <h3 id="alert-modal-title-text-node">Application Prompt</h3>
-            <p id="alert-modal-body-text-node" class="margin-top-sm" style="color: var(--fort-blue-dark); font-size: 0.95rem; line-height: 1.4;"></p>
-            <button id="alert-modal-close-trigger-btn" class="btn-blue margin-top-md" style="min-width: 100px;">Close</button>
-        </div>
-    </div>
-
     <div id="confirm-modal" class="modal-overlay">
         <div class="modal-box rounded-rect">
             <h3>Are you sure?</h3>
@@ -135,15 +127,29 @@
         </div>
     </div>
 
-    <div id="welcome-modal" class="modal-overlay">
-        <div class="modal-box rounded-rect text-center">
-            <h2>Welcome to Fort Mart!</h2>
-            <p><strong>Your one-stop shop for everything.</strong></p>
+    <div id="ad-modal" class="modal-overlay-ad">
+        <div class="modal-box-ad rounded-rect text-center">
+            <!-- Dynamically injected ad header -->
+            <h2 id="ad-header"></h2>
+            
+            <!-- Dynamically injected ad text -->
+            <p id="ad-text"></p>
+            
+            <!-- Dynamically injected ad media (image or video) -->
+            <div id="ad-media-container" class="media-container-ad"></div>
+            
             <br>
-            <button onclick="closeActiveModalDirectly('welcome-modal')" class="btn-blue">Start Exploring</button>
+            <!-- Modal Action Buttons -->
+            <div class="ad-actions">
+                <!-- Visit / External link button -->
+                <a class="btn-blue-ad" style="text-decoration: none !important;" id="ad-visit-btn" href="#" target="_blank" rel="noopener noreferrer" class="btn-green-ad">Visit Site</a>
+                
+                <!-- Continue / Close button -->
+                <button id="ad-continue-btn" onclick="closeActiveModalDirectlyAd('ad-modal')" class="btn-blue-ad">Continue</button>
+            </div>
         </div>
     </div>
-
+        
     <div id="auth-modal" class="modal-overlay">
         <div class="modal-box rounded-rect" id="auth-modal-content"></div>
     </div>
@@ -360,31 +366,50 @@
                                 <div class="settings-section-container rounded-rect">
                                     <h2>Official Developer Contact Access Ports</h2>
                                     <div class="suite-extensions-vertical-stack" style="margin-bottom:25px;">
-                                        <div class="suite-extension-row-card rounded-rect" style="display:flex; align-items:center; gap:15px; padding:15px; background:#fdfdfd;">
-                                            <span style="font-size:1.5rem; color:#25D366;"><i class="fa-brands fa-whatsapp"></i></span>
-                                            <div>
-                                                <strong>WhatsApp Corporate Node:</strong><br>
-                                                <a href="https://wa.me/2348028241162" target="_blank" style="color:var(--fort-blue-light); text-decoration:none; font-weight:700;">+2348028241162</a>
+                                        
+                                        <!-- WhatsApp Card -->
+                                        <div class="suite-extension-row-card rounded-rect">
+                                            <div class="card-info">
+                                                <span class="card-icon" style="color: #25D366;"><i class="fa-brands fa-whatsapp"></i></span>
+                                                <div>
+                                                    <strong>WhatsApp Corporate Node:</strong><br>
+                                                    <a href="https://wa.me/2348028241162" target="_blank" style="color:var(--fort-blue-light); text-decoration:none; font-weight:700;">+2348028241162</a>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div>
-                                            <a href="https://wa.me/2348028241162" target="_blank" style="text-decoration: none;">
-                                                <button class="btn-blue">  💬 Chat on WhatsApp</button>
+                                            <a href="https://wa.me/2348028241162" target="_blank" class="card-btn-link">
+                                                <button class="btn-blue"><i class="fa-brands fa-whatsapp"></i> Chat on WhatsApp</button>
                                             </a>
                                         </div>
-                                        <div class="suite-extension-row-card rounded-rect" style="display:flex; align-items:center; gap:15px; padding:15px; background:#fdfdfd;">
-                                            <span style="font-size:1.5rem; color:#EA4335;"><i class="fa-solid fa-envelope"></i></span>
-                                            <div>
-                                                <strong>E-Mail Support Gateway:</strong><br>
-                                                <a href="mailto:fortdevelopers492@gmail.com" style="color:var(--fort-blue-light); text-decoration:none; font-weight:700;">fortdevelopers492@gmail.com</a>
+
+                                        <!-- Gmail Card -->
+                                        <div class="suite-extension-row-card rounded-rect">
+                                            <div class="card-info">
+                                                <span class="card-icon" style="color: #EA4335;"><i class="fa-solid fa-envelope"></i></span>
+                                                <div>
+                                                    <strong>E-Mail Support Gateway:</strong><br>
+                                                    <a href="mailto:fortdevelopers492@gmail.com" style="color:var(--fort-blue-light); text-decoration:none; font-weight:700;">fortdevelopers492@gmail.com</a>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div>
-                                            <a href="mailto:fortdevelopers492@gmail.com" style="text-decoration: none;">
-                                                <button class="btn-blue">📩 Email Us</button>
+                                            <a href="mailto:fortdevelopers492@gmail.com" class="card-btn-link">
+                                                <button class="btn-blue"><i class="fa-solid fa-envelope"></i> Email Us</button>
                                             </a>
                                         </div>
-                                    </div>
+
+                                        <!-- Facebook Card -->
+                                        <div class="suite-extension-row-card rounded-rect">
+                                            <div class="card-info">
+                                                <span class="card-icon" style="color: #1877F2;"><i class="fa-brands fa-facebook"></i></span>
+                                                <div>
+                                                    <strong>Facebook Page:</strong><br>
+                                                    <a href="https://facebook.com/fortdevelopers492" target="_blank" style="color:var(--fort-blue-light); text-decoration:none; font-weight:700;">Fort Developers</a>
+                                                </div>
+                                            </div>
+                                            <a href="https://facebook.com/fortdevelopers492" target="_blank" class="card-btn-link">
+                                                <button class="btn-blue"><i class="fa-brands fa-facebook"></i> View and Follow Our Facebook Page</button>
+                                            </a>
+                                        </div>
+
+                                    </div>   
                                     <h2>Explore Alternative Product Offerings from Fort Developers</h2>
                                     <hr>
                                     <br>
@@ -403,7 +428,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="margin-top-md">
-                                                    <button class="btn-blue" onclick="window.open('https://fortdevelopers492-hub.github.io/fort/index.html', '_blank')">Visit Website</button>
+                                                    <button class="btn-blue" onclick="window.open('https://fort.com', '_blank')">Visit Website</button>
                                                 </div>                    
                                             </div>
                                         </div>
@@ -412,7 +437,7 @@
                                             <div class="section-content-wrapper-fortdev website-section-layout">
                                                 <div class="website-meta-side">
                                                     <div class="large-avatar-frame-fortdev rounded-rect">
-                                                        <img src="Fort Logo Circle Cropped.png" alt="Fort Logo">
+                                                        <img src="Fort Website Builder Logo Circle Cropped.png" alt="Fort Logo">
                                                     </div>
                                                     <div class="website-info-block-fortdev">
                                                         <div class="header-inline-edit-row-fortdev">
@@ -422,7 +447,26 @@
                                                     </div>
                                                 </div>
                                                 <div class="margin-top-md">
-                                                    <button class="btn-blue" onclick="window.open('https://fortdevelopers492-hub.github.io/createawebsite-fort/', '_blank')">Visit Website</button>
+                                                    <button class="btn-blue" onclick="window.open('https://createawebsite.fort.com', '_blank')">Visit Website</button>
+                                                </div>                    
+                                            </div>
+                                        </div>
+                                        <br>
+                                        <div id="dynamic-websites-container-fortdev">
+                                            <div class="section-content-wrapper-fortdev website-section-layout">
+                                                <div class="website-meta-side">
+                                                    <div class="large-avatar-frame-fortdev rounded-rect">
+                                                        <img src="Fort Graphics Logo Circle Cropped.png" alt="Fort Logo">
+                                                    </div>
+                                                    <div class="website-info-block-fortdev">
+                                                        <div class="header-inline-edit-row-fortdev">
+                                                            <h3 id="fm-title-text">Fort Graphics Marketplace</h3>
+                                                        </div>
+                                                        <p id="fm-info-text" class="margin-top-xs">A website where you can request graphic design like image editing, e-flyer design etc.</p>
+                                                    </div>
+                                                </div>
+                                                <div class="margin-top-md">
+                                                    <button class="btn-blue" onclick="window.open('https://graphics.fort.com', '_blank')">Visit Website</button>
                                                 </div>                    
                                             </div>
                                         </div>
@@ -430,7 +474,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>%
+                    </div>
                 </section>
 
                 <section id="page-admin-dashboard" class="view-page hidden-view">

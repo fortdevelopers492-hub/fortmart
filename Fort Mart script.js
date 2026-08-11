@@ -22,7 +22,7 @@ let APP_STATE = {
     fortAiActiveTaggedProductObject: null
 };
 
-// Local System Caching Array State - Preserving Default Admin, Sarah, and Account Manager accounts
+// Local System Caching Array State - Preserving Default Admin, Sarah,starboyosaro492 and Account Manager accounts
 let SYSTEM_DATABASE = {
     users: [
         { uid: "admin", identityName: "Fort Mart Admin", accountType: "business", country: "Nigeria", dialingCode: "+234", identifierText: "fortdevelopers492@gmail.com", secretKey: "Fortmart492#", avatar: "Fort Mart Logo Circle Cropped.png", businessName: "Fort Mart Core Operations", businessInfo: "Primary global system marketplace monitoring profile.", status: "verified" },
@@ -35,7 +35,7 @@ let SYSTEM_DATABASE = {
 };
 
 // Destructure references comprehensively from your main global Firebase configuration script
-const { db, collection, onSnapshot, doc, setDoc, updateDoc } = window.FortMartFirebase;
+const { db, collection, onSnapshot, doc, setDoc, updateDoc, getCountFromServer } = window.FortMartFirebase;
 
 /**
  * REAL-TIME DATABASE LIFECYCLE LISTENERS
@@ -46,8 +46,8 @@ function initializeRealtimeSystemSync() {
     onSnapshot(collection(db, "users"), (snapshot) => {
         // Reset to default accounts first to avoid infinite duplication arrays on snapshot triggers
         SYSTEM_DATABASE.users = [
-            { uid: "admin", identityName: "Fort Mart Admin", accountType: "business", country: "Nigeria", dialingCode: "+234", identifierText: "Fort Mart", secretKey: "Fortmart492#", avatar: "Fort Mart Logo Circle Cropped.png", businessName: "Fort Mart Core Operations", businessInfo: "Primary global system marketplace monitoring profile.", status: "verified" },
-            { uid: "account_manager", identityName: "Fort Mart Account Manager", accountType: "business", country: "Nigeria", dialingCode: "+234", identifierText: "Fort Mart 2", secretKey: "Fortmart492#", avatar:"Fort Mart Logo Circle Cropped.png", businessName: "Fort Mart Account Manager", businessInfo: "Primary global system marketplace monitoring profile.", status: "verified"  }
+            { uid: "admin", identityName: "Fort Mart Admin", accountType: "business", country: "Nigeria", dialingCode: "+234", identifierText: "fortdevelopers492@gmail.com", secretKey: "Fortmart492#", avatar: "Fort Mart Logo Circle Cropped.png", businessName: "Fort Mart Core Operations", businessInfo: "Primary global system marketplace monitoring profile.", status: "verified" },
+            { uid: "account_manager", identityName: "Fort Mart Account Manager", accountType: "business", country: "Nigeria", dialingCode: "+234", identifierText: "starboyosaro492@gmail.com", secretKey: "Fortmart492#", avatar:"Fort Mart Logo Circle Cropped.png", businessName: "Fort Mart Account Manager", businessInfo: "Primary global system marketplace monitoring profile.", status: "verified"  }
         ];
         
         snapshot.forEach(doc => {
@@ -336,6 +336,11 @@ function navigateToPage(targetPageId) {
             if (typeof initializeProfileDetailsAccountManagementFieldsValues === "function") {
                 initializeProfileDetailsAccountManagementFieldsValues();
             }
+        } else if (targetPageId === 'admin-dashboard') {
+            searchBarPlaceholder.placeholder = "Search Users....."
+            if (typeof renderAdminUsersManagementList === "function") {
+                renderAdminUsersManagementList();
+            }
         } else {
             // Default safe fallback placeholder when viewing admin control center or Fort-AI console
             searchBarPlaceholder.placeholder = "Search Fort Mart……";
@@ -509,7 +514,7 @@ function renderSignInModalStepContentLayout() {
       
         <div class="form-input-container">
             <label>Input Registered Email Address:</label>
-            <input type="text" id="auth-signin-identifier" class="form-field-control" placeholder="Input registered email address" oninput="if(typeof executeLiveProfilePictureLookup === 'function') executeLiveProfilePictureLookup(this.value)">
+            <input type="text" name="email" id="auth-signin-identifier" class="form-field-control" placeholder="Input registered email address" oninput="if(typeof executeLiveProfilePictureLookup === 'function') executeLiveProfilePictureLookup(this.value)">
             <div id="err-signin-identifier" class="text-danger-alert hidden-node" style="color: red; font-size: 0.8rem; margin-top: 4px;"></div>
         </div>
         <div class="form-input-container">
@@ -729,7 +734,7 @@ function renderSignUpModalWizardStepOne() {
         </div>
         <div class="form-input-container">
             <label>Input Email Address:</label>
-            <input type="text" id="reg-identifier" class="form-field-control" placeholder="Input email address" oninput="evaluateSignUpStepOneFormCompletenessStateValidation()">
+            <input type="text" name="email" id="reg-identifier" class="form-field-control" placeholder="Input email address" oninput="evaluateSignUpStepOneFormCompletenessStateValidation()">
             <div id="err-reg-step1-feedback" class="text-danger-alert hidden-node" style="color: red; font-size: 0.8rem; margin-top: 4px;">Input all information properly</div>
         </div>
         
@@ -799,7 +804,7 @@ function renderSignUpModalWizardStepTwo() {
         <div id="signup-dynamic-fields-wrapper">
             <div class="form-input-container">
                 <label>Input Personal Full Name:</label>
-                <input type="text" id="reg-personal-name" class="form-field-control" placeholder="Enter personal name" oninput="validateSignUpStepTwoDataFormCompleteness()">
+                <input type="text" name="name" id="reg-personal-name" class="form-field-control" placeholder="Enter personal name" oninput="validateSignUpStepTwoDataFormCompleteness()">
             </div>
             <div class="form-input-container">
                 <label>Upload Profile Picture (Optional):</label>
@@ -829,7 +834,7 @@ function toggleSignUpStepTwoClassificationFormsLayout(selectedClassificationType
         fieldsWrapper.innerHTML = `
             <div class="form-input-container">
                 <label>Input Personal Full Name:</label>
-                <input type="text" id="reg-personal-name" class="form-field-control" placeholder="Enter personal name" oninput="validateSignUpStepTwoDataFormCompleteness()">
+                <input type="text" name="name" id="reg-personal-name" class="form-field-control" placeholder="Enter personal name" oninput="validateSignUpStepTwoDataFormCompleteness()">
             </div>
             <div class="form-input-container">
                 <label>Upload Profile Picture (Optional):</label>
@@ -855,7 +860,7 @@ function toggleSignUpStepTwoClassificationFormsLayout(selectedClassificationType
             </div>
             <div class="form-input-container">
                 <label>Input Personal Full Name:</label>
-                <input type="text" id="reg-personal-name" class="form-field-control" placeholder="Enter operational manager name" oninput="validateSignUpStepTwoDataFormCompleteness()">
+                <input type="text" name="name" id="reg-personal-name" class="form-field-control" placeholder="Enter operational manager name" oninput="validateSignUpStepTwoDataFormCompleteness()">
             </div>
             <div class="form-input-container">
                 <label>Inventory Specification:</label>
@@ -885,21 +890,25 @@ function processSignUpAvatarFileSelection() {
     const nextBtn = document.getElementById("btn-signup-step2-next");
 
     if (fileNode && fileNode.files && fileNode.files[0]) {
-        // Disable Next button momentarily while loading/processing the file
+        const selectedFile = fileNode.files[0];
+
+        // Store raw File object in temporary state (passed to Firebase Storage upon submit)
+        SIGNUP_WIZARD_TEMPORARY_OBJECT.avatarFile = selectedFile;
+        // Keep avatar string cleared so Base64 never gets saved into Firestore
+        SIGNUP_WIZARD_TEMPORARY_OBJECT.avatar = "";
+
+        // Disable Next button momentarily while processing preview
         if (nextBtn) {
             nextBtn.disabled = true;
             nextBtn.classList.add("faintly-colored");
         }
         if (placeholderTextNode) {
-            placeholderTextNode.innerText = "Processing image...";
+            placeholderTextNode.innerText = "Processing image preview...";
         }
 
+        // FileReader used strictly for UI image preview display
         const readerInstance = new FileReader();
         readerInstance.onload = function(e) {
-            // Save the data URL to local wizard state data structure (to be pushed to Firebase during submit)
-            SIGNUP_WIZARD_TEMPORARY_OBJECT.avatar = e.target.result;
-
-            // Render visual preview elements dynamically
             if (previewImgNode) {
                 previewImgNode.src = e.target.result;
                 previewImgNode.style.display = "block";
@@ -908,13 +917,15 @@ function processSignUpAvatarFileSelection() {
                 placeholderTextNode.style.display = "none";
             }
 
-            // Run completeness validation checklist (this re-evaluates eligibility status & restores Next Button)
+            // Run completeness validation checklist
             validateSignUpStepTwoDataFormCompleteness();
         };
-        readerInstance.readAsDataURL(fileNode.files[0]);
+        readerInstance.readAsDataURL(selectedFile);
     } else {
-        // Reset preview if selection was cleared
+        // Clear stored file reference and reset preview if selection was cleared
+        SIGNUP_WIZARD_TEMPORARY_OBJECT.avatarFile = null;
         SIGNUP_WIZARD_TEMPORARY_OBJECT.avatar = "";
+
         if (previewImgNode) {
             previewImgNode.style.display = "none";
             previewImgNode.src = "";
@@ -1240,69 +1251,48 @@ async function executeFinalizeAccountRegistrationPipelineSubmission() {
     }
     SIGNUP_WIZARD_TEMPORARY_OBJECT.signUpOtpSecondsLeft = 0;
 
-    if(submitBtn) submitBtn.disabled = true;
-
-    const assignedUidStr = "user_" + Date.now();
-    const finalNewUserRecord = {
-        uid: assignedUidStr,
-        identityName: SIGNUP_WIZARD_TEMPORARY_OBJECT.identityName,
-        accountType: SIGNUP_WIZARD_TEMPORARY_OBJECT.accountType,
-        country: SIGNUP_WIZARD_TEMPORARY_OBJECT.country,
-        dialingCode: SIGNUP_WIZARD_TEMPORARY_OBJECT.dialingCode,
-        identifierText: SIGNUP_WIZARD_TEMPORARY_OBJECT.identifierText,
-        secretKey: SIGNUP_WIZARD_TEMPORARY_OBJECT.secretKey,
-        password: SIGNUP_WIZARD_TEMPORARY_OBJECT.secretKey,
-        avatar: SIGNUP_WIZARD_TEMPORARY_OBJECT.avatar || "", 
-        verificationStatus: "verified",
-        businessName: SIGNUP_WIZARD_TEMPORARY_OBJECT.businessName || SIGNUP_WIZARD_TEMPORARY_OBJECT.identityName,
-        businessInfo: SIGNUP_WIZARD_TEMPORARY_OBJECT.businessInfo || "No descriptions detailed yet."
-    };
+    if (submitBtn) submitBtn.disabled = true;
 
     try {
-        // Safe document commits directly down to Firebase Firestore cloud instances
-        await setDoc(doc(db, "users", assignedUidStr), finalNewUserRecord);
-        
-        const welcomeThreadId = "chat_admin_" + assignedUidStr;
-        const systemAdminWelcomeThreadNode = {
-            chatId: welcomeThreadId,
-            dynamicParticipants: ["admin", assignedUidStr],
-            messageLog: [
-                { 
-                    mid: "wel1", 
-                    senderUid: "admin", 
-                    text: "Thanks for choosing Fort Mart. We are here with an amazing web app when it comes to online shopping. We wish you best of luck as you explore the market.", 
-                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                }
-            ]
-        };
-        await setDoc(doc(db, "chats", welcomeThreadId), systemAdminWelcomeThreadNode);
-        
-        // Synchronize state down to internal memory array tracking definitions
-        SYSTEM_DATABASE.users.push(finalNewUserRecord);
+        const finalNewUserRecord = await registerNewUserAccountRecord(
+            SIGNUP_WIZARD_TEMPORARY_OBJECT,
+            SIGNUP_WIZARD_TEMPORARY_OBJECT.avatarFile
+        );
+
+        if (typeof SYSTEM_DATABASE !== "undefined" && SYSTEM_DATABASE.users) {
+            SYSTEM_DATABASE.users.push(finalNewUserRecord);
+        }
+
         if (typeof syncPlatformDatabaseStateToWebStorage === "function") {
             syncPlatformDatabaseStateToWebStorage();
         }
 
-        APP_STATE.currentUser = finalNewUserRecord;
-        
+        // Re-sync metrics count directly from Firebase after new account registration
+        syncAdminDashboardMetricsFromFirebase();
+
+        if (typeof APP_STATE !== "undefined") {
+            APP_STATE.currentUser = finalNewUserRecord;
+        }
+
         if (typeof closeActiveModalDirectly === "function") {
             closeActiveModalDirectly('auth-modal');
         } else {
-            document.getElementById("auth-modal").classList.remove("active");
+            const authModal = document.getElementById("auth-modal");
+            if (authModal) authModal.classList.remove("active");
         }
-        
+
         const welcomeModal = document.getElementById("welcome-modal");
-        if(welcomeModal) welcomeModal.classList.add("active");
-        
+        if (welcomeModal) welcomeModal.classList.add("active");
+
     } catch (error) {
         console.error("Firebase registration failure sequence exception logging report trace:", error);
         if (feedbackElement) {
             feedbackElement.innerText = "Network Registry Error: Could not verify and sync account profile securely down to the global server.";
             feedbackElement.classList.remove("hidden-node");
-        } else {
+        } else if (typeof showTopRightToast === "function") {
             showTopRightToast("Network Registry Error: Could not verify and sync account profile securely down to the global server.", "error");
         }
-        if(submitBtn) submitBtn.disabled = false;
+        if (submitBtn) submitBtn.disabled = false;
     }
 }
 
@@ -1318,16 +1308,12 @@ function renderForgotPasswordModalWorkflow() {
             <label style="font-size:0.82rem; font-weight:700; color:var(--fort-gray-slate);">Country Code:</label>
             <select id="forgot-country" class="form-field-control">
                 <option value="+234" selected>Nigeria (+234)</option>
-                <option value="+1">United States / Canada (+1)</option>
-                <option value="+44">United Kingdom (+44)</option>
-                <option value="+254">Kenya (+254)</option>
-                <option value="+27">South Africa (+27)</option>
             </select>
         </div>
 
         <div class="form-input-container margin-top-xs">
             <label style="font-size:0.82rem; font-weight:700; color:var(--fort-gray-slate);">Registration Contact (Email Address):</label>
-            <input type="text" id="forgot-id" class="form-field-control" placeholder="example@domain.com">
+            <input type="text" name="email" id="forgot-id" class="form-field-control" placeholder="example@domain.com">
             <div id="err-forgot-step1-feedback" class="text-danger-alert hidden-node" style="color: red; font-size: 0.8rem; margin-top: 4px;"></div>
         </div>
 
@@ -1722,6 +1708,12 @@ function handleCategorySearch(searchStringQuery) {
 /**
  * CORE GRID RENDERING SYSTEM
  * Fetches real-time localized listings and handles empty/error states explicitly.
+ * Integrates Firebase Storage download URL resolutions for cloud-stored images.
+ */
+/**
+ * CORE GRID RENDERING SYSTEM
+ * Fetches real-time localized listings, sorts normal products by clickCount descending,
+ * and handles empty/error states explicitly.
  */
 async function renderMarketplaceProductsDisplayLoop() {
     const loopDisplayTargetGrid = document.getElementById("products-display-grid");
@@ -1751,11 +1743,28 @@ async function renderMarketplaceProductsDisplayLoop() {
     const FIREBASE_STORAGE_DEFAULT_PRODUCT_IMAGE = "https://firebasestorage.googleapis.com/v0/b/fort-mart.appspot.com/o/defaults%2Fproduct_placeholder.png?alt=media";
     const FIREBASE_STORAGE_DEFAULT_AVATAR = "https://firebasestorage.googleapis.com/v0/b/fort-mart.appspot.com/o/defaults%2Fuser_avatar_placeholder.png?alt=media";
 
+    async function resolveFirebaseStorageUrl(imageRefOrUrl, fallbackUrl) {
+        if (!imageRefOrUrl) return fallbackUrl;
+        if (imageRefOrUrl.startsWith("http://") || imageRefOrUrl.startsWith("https://") || imageRefOrUrl.startsWith("data:")) {
+            return imageRefOrUrl;
+        }
+        try {
+            if (window.FortMartFirebase && window.FortMartFirebase.storage && window.FortMartFirebase.ref && window.FortMartFirebase.getDownloadURL) {
+                const { storage, ref, getDownloadURL } = window.FortMartFirebase;
+                const storageRef = ref(storage, imageRefOrUrl);
+                return await getDownloadURL(storageRef);
+            }
+        } catch (storageErr) {
+            console.warn(`Could not resolve Firebase Storage reference [${imageRefOrUrl}]:`, storageErr);
+        }
+        return fallbackUrl;
+    }
+
     try {
         if (window.FortMartFirebase) {
             const { db, collection, getDocs } = window.FortMartFirebase;
             
-            // 1. Metadata Collection
+            // Fetch System Metadata
             try {
                 const systemMetaRef = await getDocs(collection(db, "system_metadata"));
                 systemMetaRef.forEach(doc => {
@@ -1771,14 +1780,14 @@ async function renderMarketplaceProductsDisplayLoop() {
                 console.warn("Unable to fetch system_metadata collection:", metaErr);
             }
 
-            // 2. Fetch Products
+            // Fetch Products
             const productsSnapshot = await getDocs(collection(db, "products"));
             productsSnapshot.forEach(doc => {
                 activeProductsList.push({ pid: doc.id, ...doc.data() });
             });
             SYSTEM_DATABASE.products = activeProductsList;
 
-            // 3. Fetch Users
+            // Fetch Users
             const usersSnapshot = await getDocs(collection(db, "users"));
             usersSnapshot.forEach(doc => {
                 activeUsersCache.push({ uid: doc.id, ...doc.data() });
@@ -1786,7 +1795,6 @@ async function renderMarketplaceProductsDisplayLoop() {
             SYSTEM_DATABASE.users = activeUsersCache;
 
         } else {
-            console.warn("Firebase instance not found. Reading from local memory...");
             activeProductsList = [...(SYSTEM_DATABASE.products || [])];
             activeUsersCache = [...(SYSTEM_DATABASE.users || [])];
             leaderboard = SYSTEM_DATABASE.pinnedLeaderboard || [];
@@ -1797,9 +1805,7 @@ async function renderMarketplaceProductsDisplayLoop() {
         let computedInventoryOutputArray = activeProductsList.filter(item => {
             const structuralOwnerAccountPointer = activeUsersCache.find(u => u.uid === item.ownerUid);
             if (!structuralOwnerAccountPointer) return false;
-            
             if (structuralOwnerAccountPointer.country !== locationFilteringCriteriaString) return false;
-            
             if (APP_STATE.currentSelectedCategory !== 'Trending' && item.category !== APP_STATE.currentSelectedCategory) return false;
             
             if (APP_STATE.searchQuery !== '') {
@@ -1810,9 +1816,13 @@ async function renderMarketplaceProductsDisplayLoop() {
             return true;
         });
 
-        // Sorting Logic
+        // 1. Admin Slot Item
         let adminPinnedItem = computedInventoryOutputArray.filter(item => item.pid === adminSlotPid);
+        
+        // 2. Standard Leaderboard Pinned items
         let pinnedItems = computedInventoryOutputArray.filter(item => leaderboard.includes(item.pid) && item.pid !== adminSlotPid);
+        
+        // 3. Normal items sorted by clickCount (hit count) descending
         let normalItems = computedInventoryOutputArray.filter(item => !leaderboard.includes(item.pid) && item.pid !== adminSlotPid);
 
         pinnedItems.sort((a, b) => leaderboard.indexOf(a.pid) - leaderboard.indexOf(b.pid));
@@ -1822,7 +1832,6 @@ async function renderMarketplaceProductsDisplayLoop() {
 
         loopDisplayTargetGrid.innerHTML = "";
 
-        // ⚠️ EMPTY STATE HANDLING: If no products were returned from Firebase or filters
         if (displayArrayToProcess.length === 0) {
             loopDisplayTargetGrid.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 50px 20px; background: #f9fbfd; border: 2px dashed #cbd5e1; border-radius: 12px; margin: 20px 0;">
@@ -1840,11 +1849,18 @@ async function renderMarketplaceProductsDisplayLoop() {
         }
 
         // Render Cards
-        displayArrayToProcess.forEach((product) => {
+        for (const product of displayArrayToProcess) {
             const contextualOwnerRecord = activeUsersCache.find(u => u.uid === product.ownerUid);
             const ownerCorporateEntityLabel = contextualOwnerRecord ? (contextualOwnerRecord.businessName || contextualOwnerRecord.identityName) : "External Global Distribution Partner Hub";
-            const ownerCircularAvatarSrcString = (contextualOwnerRecord && contextualOwnerRecord.avatar) ? contextualOwnerRecord.avatar : FIREBASE_STORAGE_DEFAULT_AVATAR;
-            const productCoverPhotoSrc = product.coverPhoto || FIREBASE_STORAGE_DEFAULT_PRODUCT_IMAGE;
+            
+            const ownerCircularAvatarSrcString = await resolveFirebaseStorageUrl(
+                contextualOwnerRecord ? contextualOwnerRecord.avatar : null, 
+                FIREBASE_STORAGE_DEFAULT_AVATAR
+            );
+            const productCoverPhotoSrc = await resolveFirebaseStorageUrl(
+                product.coverPhoto, 
+                FIREBASE_STORAGE_DEFAULT_PRODUCT_IMAGE
+            );
 
             const cardContainerBlockElement = document.createElement("div");
             cardContainerBlockElement.className = "product-item-card-container rounded-rect";
@@ -1861,7 +1877,7 @@ async function renderMarketplaceProductsDisplayLoop() {
                 
             cardContainerBlockElement.innerHTML = `
                 <div class="poster-profile-strip" onclick="event.stopPropagation(); launchDetailedUserProfileContextOverlaySummaryModal('${product.ownerUid}')">
-                    <img class="mini-profile-avatar circle-container" src="${ownerCircularAvatarSrcString}" alt="Avatar">
+                    <img class="mini-profile-avatar circle-container" src="${ownerCircularAvatarSrcString}" alt="Avatar" onerror="this.src='${FIREBASE_STORAGE_DEFAULT_AVATAR}'">
                     <span class="mini-profile-business-name" style="font-weight:600; font-size:0.85rem;">${ownerCorporateEntityLabel}</span>
                     ${pinnedBadgeHTML}
                 </div>
@@ -1878,10 +1894,9 @@ async function renderMarketplaceProductsDisplayLoop() {
                 </div>
             `;
             loopDisplayTargetGrid.appendChild(cardContainerBlockElement);
-        });
+        }
 
     } catch (err) {
-        // ⚠️ CATCH ERROR DISPLAY: Shows a warning card on Firebase connection failure
         console.error("Firebase fetch failed or grid loop execution error:", err);
         loopDisplayTargetGrid.innerHTML = `
             <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px; margin: 20px 0;">
@@ -1898,14 +1913,193 @@ async function renderMarketplaceProductsDisplayLoop() {
 
 /**
  * EXPANDED SPECIFICATIONS VIEW MODEL
- * Updated with Firebase Storage Image links.
+ * Updated with Firebase Storage Image links, Document Title & PushState URL Routing.
  */
-async function launchComprehensiveProductSpecificationsExpandedModalView(productIdTokenKey) {
-    if(!APP_STATE.currentUser) {
+/**
+ * EXPANDED SPECIFICATIONS VIEW MODEL
+ * Records hit count on launch and renders product details asynchronously.
+ */
+async function launchComprehensiveProductSpecificationsExpandedModalView(productIdTokenKey, pushHistory = true) {
+    if (!APP_STATE.currentUser) {
         triggerAuthenticationModalSequence();
         return;
     }
-    
+
+    const detailOverlayBodyNode = document.getElementById("product-detail-modal-body");
+    if (!detailOverlayBodyNode) return;
+
+    // 1. Trigger the click/hit counter
+    await recordProductHitCount(productIdTokenKey);
+
+    detailOverlayBodyNode.innerHTML = `<div style="text-align:center; padding:40px; color:var(--fort-blue-dark);">Fetching complete product metadata from cloud servers...</div>`;
+    document.getElementById("product-detail-modal").classList.add("active");
+
+    const FIREBASE_STORAGE_DEFAULT_PRODUCT_IMAGE = "https://firebasestorage.googleapis.com/v0/b/fort-mart.appspot.com/o/defaults%2Fproduct_placeholder.png?alt=media";
+    const FIREBASE_STORAGE_DEFAULT_AVATAR = "https://firebasestorage.googleapis.com/v0/b/fort-mart.appspot.com/o/defaults%2Fuser_avatar_placeholder.png?alt=media";
+
+    async function resolveFirebaseStorageUrl(imageRefOrUrl, fallbackUrl) {
+        if (!imageRefOrUrl) return fallbackUrl;
+        if (imageRefOrUrl.startsWith("http://") || imageRefOrUrl.startsWith("https://") || imageRefOrUrl.startsWith("data:")) {
+            return imageRefOrUrl;
+        }
+        try {
+            if (window.FortMartFirebase && window.FortMartFirebase.storage && window.FortMartFirebase.ref && window.FortMartFirebase.getDownloadURL) {
+                const { storage, ref, getDownloadURL } = window.FortMartFirebase;
+                const storageRef = ref(storage, imageRefOrUrl);
+                return await getDownloadURL(storageRef);
+            }
+        } catch (e) {
+            console.warn("Storage resolution warning:", e);
+        }
+        return fallbackUrl;
+    }
+
+    try {
+        let targetedProductItemMatch = null;
+        let operationalTargetProfileOwnerRecord = null;
+
+        if (window.FortMartFirebase) {
+            const { db, doc, getDoc } = window.FortMartFirebase;
+            const productDocRef = doc(db, "products", productIdTokenKey);
+            const productSnapshot = await getDoc(productDocRef);
+            
+            if (productSnapshot.exists()) {
+                targetedProductItemMatch = { pid: productSnapshot.id, ...productSnapshot.data() };
+            }
+        }
+
+        if (!targetedProductItemMatch) {
+            targetedProductItemMatch = (SYSTEM_DATABASE.products || []).find(p => p.pid === productIdTokenKey) || {
+                pid: productIdTokenKey, ownerUid: "admin", name: "Synchronized Affiliate System Feed Record", category: "General Ledger", info: "Fallback inventory trace mapping record placeholder data structural component metrics analysis logs references.", price: 12500, coverPhoto: FIREBASE_STORAGE_DEFAULT_PRODUCT_IMAGE, aiInfo: "External baseline mapping tracking references model arrays values.", clickCount: 1
+            };
+        }
+
+        // Dynamic Page Title Update
+        document.title = `${targetedProductItemMatch.name} - Fort Mart`;
+
+        // Dynamic URL PushState Update
+        if (pushHistory && typeof createProductSlug === "function") {
+            const productSlug = createProductSlug(targetedProductItemMatch.name);
+            const newUrl = `${window.location.origin}${window.location.pathname}?product=${productSlug}&pid=${targetedProductItemMatch.pid}`;
+            window.history.pushState({ pid: targetedProductItemMatch.pid }, "", newUrl);
+        }
+
+        if (window.FortMartFirebase && !productIdTokenKey.startsWith("ext_mock_")) {
+            const { db, doc, getDoc } = window.FortMartFirebase;
+            const userSnapshot = await getDoc(doc(db, "users", targetedProductItemMatch.ownerUid));
+            if (userSnapshot.exists()) {
+                operationalTargetProfileOwnerRecord = { uid: userSnapshot.id, ...userSnapshot.data() };
+            }
+        }
+
+        if (!operationalTargetProfileOwnerRecord) {
+            operationalTargetProfileOwnerRecord = (SYSTEM_DATABASE.users || []).find(u => u.uid === targetedProductItemMatch.ownerUid) || {
+                businessName: "External Distribution Partner Network", country: "Nigeria", avatar: FIREBASE_STORAGE_DEFAULT_AVATAR
+            };
+        }
+
+        let baselineCurrencySymbolSign = (APP_STATE.currentUser.country === 'Nigeria') ? '₦' : '$';
+        let operationalActionControlsLayoutStringHTML = "";
+        
+        if (APP_STATE.currentUser.uid === targetedProductItemMatch.ownerUid) {
+            operationalActionControlsLayoutStringHTML = `
+                <button class="btn-gray" onclick="closeActiveModalDirectly('product-detail-modal'); switchSettingsSection('my-products'); navigateToPage('my-account');">⚙️ Manage Products</button>
+            `;
+        } else {
+            operationalActionControlsLayoutStringHTML = `
+                <button class="btn-blue" onclick="closeActiveModalDirectly('product-detail-modal'); initialDirectMessageCommunicationPipelineSetup('${targetedProductItemMatch.ownerUid}')">💬 Message Seller</button>
+            `;
+        }
+
+        let adminPinControlHTML = "";
+        const isUserAdmin = (APP_STATE.currentUser.uid === 'admin' || APP_STATE.currentUser.id === 'admin');
+        
+        if (isUserAdmin) {
+            const leaderboard = SYSTEM_DATABASE.pinnedLeaderboard || [];
+            const isCurrentPinned = leaderboard.includes(targetedProductItemMatch.pid);
+            const isAdminSlotOccupant = (SYSTEM_DATABASE.adminSlot === targetedProductItemMatch.pid);
+            
+            adminPinControlHTML = `
+                <div style="background: #edf2f7; border: 1px dashed var(--fort-blue-primary); padding: 12px; border-radius: 6px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
+                    <span style="font-size: 0.85rem; font-weight: bold; color: var(--fort-blue-dark);">🛡️ Admin Controls Hub</span>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="${isCurrentPinned ? 'btn-gray' : 'btn-blue'}" style="flex: 1; padding: 6px; font-size: 0.8rem; font-weight: bold;"
+                            onclick="executeToggleProductPinState('${targetedProductItemMatch.pid}')">
+                            ${isCurrentPinned ? '🛑 Unpin Standard Slot' : '📌 Pin to Standard'}
+                        </button>
+                        <button class="${isAdminSlotOccupant ? 'btn-danger' : 'btn-success'}" style="flex: 1; padding: 6px; font-size: 0.8rem; font-weight: bold; background: ${isAdminSlotOccupant ? 'crimson':'green'}; color: white; border:none; border-radius:4px; cursor:pointer;"
+                            onclick="toggleAdminExclusiveSlotState('${targetedProductItemMatch.pid}')">
+                            ${isAdminSlotOccupant ? '❌ Unassign Admin Slot' : '👑 Assign Admin Slot'}
+                        </button>
+                    </div>
+                    <button class="btn-blue" style="width: 100%; padding: 6px; font-size: 0.8rem; font-weight: bold; margin-top: 4px;" 
+                        onclick="launchPinnedProductsLeaderboardModal()">
+                        🏆 Open Pinned Products Leaderboard
+                    </button>
+                </div>
+            `;
+        }
+        
+        const productDisplayImage = await resolveFirebaseStorageUrl(targetedProductItemMatch.coverPhoto, FIREBASE_STORAGE_DEFAULT_PRODUCT_IMAGE);
+        const vendorAvatarImage = await resolveFirebaseStorageUrl(operationalTargetProfileOwnerRecord.avatar, FIREBASE_STORAGE_DEFAULT_AVATAR);
+
+        detailOverlayBodyNode.innerHTML = `
+            <div class="modal-expanded-header-row" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--fort-gray-border); padding-bottom:14px;">
+                <h3>Product Detailed Specifications</h3>
+                <button onclick="closeActiveModalDirectly('product-detail-modal')" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">✕</button>
+            </div>
+            <div class="modal-expanded-content-split-grid margin-top-md" style="display:grid; grid-template-columns: 1fr 1fr; gap:24px;">
+                <div class="expanded-left-visuals-column">
+                   <div class="expanded-master-image-box rounded-rect" style="width:100%; height:320px; background-color:#fcfcfc; overflow:hidden; border:1px solid var(--fort-gray-border); display:flex; align-items:center; justify-content:center;">
+                        <img src="${productDisplayImage}" style="width:100%; height:100%; object-fit:contain;" alt="Master Expanded Product Frame" onerror="this.src='${FIREBASE_STORAGE_DEFAULT_PRODUCT_IMAGE}'">
+                    </div>
+                </div>
+                <div class="expanded-right-details-column" style="display:flex; flex-direction:column; gap:12px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <img src="${vendorAvatarImage}" style="width:44px; height:44px; border-radius:50%; object-fit:cover;" class="circle-container" alt="Vendor Profile Photo" onerror="this.src='${FIREBASE_STORAGE_DEFAULT_AVATAR}'">
+                        <div>
+                            <h4 style="color:var(--fort-blue-primary); margin:0;">${operationalTargetProfileOwnerRecord.businessName || operationalTargetProfileOwnerRecord.identityName}</h4>
+                            <span style="font-size:0.75rem; color:var(--fort-gray-slate);">Country: ${operationalTargetProfileOwnerRecord.country || 'N/A'}</span>
+                        </div>
+                    </div>
+                    
+                    <h2 style="color:var(--fort-blue-dark); font-weight:800; margin-top:8px; margin-bottom:0;">${targetedProductItemMatch.name}</h2>
+                    <div style="font-size:1.6rem; font-weight:900; color:var(--fort-blue-light);">${baselineCurrencySymbolSign}${parseFloat(targetedProductItemMatch.price || 0).toLocaleString()}</div>
+                    
+                    <div class="spec-note-paragraph-block">
+                        <h5 style="text-transform:uppercase; font-size:0.75rem; letter-spacing:1px; color:var(--fort-gray-slate); margin:0;">Primary Descriptive Summary Logs</h5>
+                        <p style="font-size:0.95rem; line-height:1.4; color:var(--fort-blue-dark); margin-top:4px;">${targetedProductItemMatch.info || ''}</p>
+                    </div>
+
+                    <div class="spec-note-paragraph-block">
+                        <h5 style="text-transform:uppercase; font-size:0.75rem; letter-spacing:1px; color:var(--fort-gray-slate); margin:0;">More Info and Specifications (AI Assessment)</h5>
+                        <p style="font-size:0.9rem; line-height:1.4; font-style:italic; color:var(--fort-blue-primary); margin-top:4px;">${targetedProductItemMatch.aiInfo || 'Standard platform baseline listed trading stock profile object reference specifications.'}</p>
+                    </div>
+                    
+                    ${adminPinControlHTML}
+
+                    <div class="modal-expanded-actions-footer-row btn-group" style="margin-top:auto; padding-top:16px; border-top:1px solid #f0f0f0;">
+                        ${operationalActionControlsLayoutStringHTML}
+                    </div>
+                </div>
+            </div>
+        `;
+    } catch (err) {
+        console.error("Modal generation error:", err);
+        detailOverlayBodyNode.innerHTML = `<div style="text-align:center; padding:20px; color:red;">Failed to load product details: ${err.message}</div>`;
+    }
+}
+
+/**
+ * EXPANDED SPECIFICATIONS VIEW MODEL
+ * Updated with Firebase Storage Image links, Document Title & PushState URL Routing.
+ */
+async function launchComprehensiveProductSpecificationsExpandedModalView(productIdTokenKey, pushHistory = true) {
+    if (!APP_STATE.currentUser) {
+        triggerAuthenticationModalSequence();
+        return;
+    }
+
     const detailOverlayBodyNode = document.getElementById("product-detail-modal-body");
     if (!detailOverlayBodyNode) return;
 
@@ -1939,6 +2133,16 @@ async function launchComprehensiveProductSpecificationsExpandedModalView(product
             };
         }
 
+        // 1. Dynamic Page Title Update
+        document.title = `${targetedProductItemMatch.name} - Fort Mart`;
+
+        // 2. Dynamic URL PushState Update
+        if (pushHistory) {
+            const productSlug = createProductSlug(targetedProductItemMatch.name);
+            const newUrl = `${window.location.origin}${window.location.pathname}?product=${productSlug}&pid=${targetedProductItemMatch.pid}`;
+            window.history.pushState({ pid: targetedProductItemMatch.pid }, "", newUrl);
+        }
+
         if (window.FortMartFirebase && !productIdTokenKey.startsWith("ext_mock_")) {
             const { db, doc, getDoc } = window.FortMartFirebase;
             const userSnapshot = await getDoc(doc(db, "users", targetedProductItemMatch.ownerUid));
@@ -1958,7 +2162,7 @@ async function launchComprehensiveProductSpecificationsExpandedModalView(product
         
         if(APP_STATE.currentUser.uid === targetedProductItemMatch.ownerUid) {
             operationalActionControlsLayoutStringHTML = `
-                <button class="btn-gray" onclick="closeActiveModalDirectly('product-detail-modal'); switchSettingsSection('my-products'); navigateToPage('my-account');">⚙️ Manage Details & Inventory Post Structure</button>
+                <button class="btn-gray" onclick="closeActiveModalDirectly('product-detail-modal'); switchSettingsSection('my-products'); navigateToPage('my-account');">⚙️ Manage Products</button>
             `;
         } else {
             operationalActionControlsLayoutStringHTML = `
@@ -2042,6 +2246,39 @@ async function launchComprehensiveProductSpecificationsExpandedModalView(product
     } catch (err) {
         console.error("Failure opening comprehensive expanded specification container view pipeline:", err);
         detailOverlayBodyNode.innerHTML = `<div style="color:red; padding:20px; text-align:center;">Global Storage Error: Failed to load this product profile context from Firestore.</div>`;
+    }
+}
+
+/**
+ * Increments hit/click count in Firebase Firestore and updates local state.
+ * @param {string} productIdTokenKey - Unique ID of the product
+ */
+async function recordProductHitCount(productIdTokenKey) {
+    if (!productIdTokenKey || productIdTokenKey.startsWith("ext_mock_")) return;
+
+    // 1. Local state update
+    const targetedProduct = (SYSTEM_DATABASE.products || []).find(p => p.pid === productIdTokenKey);
+    if (targetedProduct) {
+        targetedProduct.clickCount = (targetedProduct.clickCount || 0) + 1;
+    }
+
+    // 2. Firebase Firestore atomic update
+    try {
+        if (window.FortMartFirebase) {
+            const { db, doc, updateDoc, increment } = window.FortMartFirebase;
+            const productRef = doc(db, "products", productIdTokenKey);
+            
+            await updateDoc(productRef, {
+                clickCount: increment(1)
+            });
+        } else if (window.firebase && window.firebase.firestore) {
+            const db = window.firebase.firestore();
+            await db.collection("products").doc(productIdTokenKey).update({
+                clickCount: firebase.firestore.FieldValue.Increment(1)
+            });
+        }
+    } catch (err) {
+        console.warn("Could not increment product clickCount in Firestore:", err);
     }
 }
 
@@ -3271,9 +3508,6 @@ function setupImagePreviewListener() {
     });
 }
 
-/**
- * Final Submission: Gathers fields and commits record details to Firestore
- */
 function executePipelineCommitNewInventoryPostRecord() {
     const name = document.getElementById("newprod-name").value.trim();
     const cat = document.getElementById("newprod-cat").value;
@@ -3308,22 +3542,28 @@ function executePipelineCommitNewInventoryPostRecord() {
         clickCount: 0
     };
 
-    // Save to local tracked state
     SYSTEM_DATABASE.products.push(finalProductInstanceObjectNode);
 
-    // Sync live payload changes directly up to Firestore if layer configuration is present
     if (window.FortMartFirebase) {
         const { db, doc, setDoc } = window.FortMartFirebase;
         setDoc(doc(db, "products", finalProductInstanceObjectNode.pid), finalProductInstanceObjectNode)
+            .then(() => {
+                // Re-sync dashboard metrics count directly from Firebase after successful write
+                syncAdminDashboardMetricsFromFirebase();
+            })
             .catch(err => console.error("Cloud inventory post storage failure synchronization traceback:", err));
     }
 
-    syncPlatformDatabaseStateToWebStorage();
+    if (typeof syncPlatformDatabaseStateToWebStorage === 'function') {
+        syncPlatformDatabaseStateToWebStorage();
+    }
     
     closeActiveModalDirectly('auth-modal');
     showTopRightToast("Product Uploading Request Sent Succesfully.", "success");
     
-    renderMarketplaceProductsDisplayLoop();
+    if (typeof renderMarketplaceProductsDisplayLoop === 'function') {
+        renderMarketplaceProductsDisplayLoop();
+    }
 }
 
 /**
@@ -4192,11 +4432,6 @@ function launchPaystackPaymentCheckoutModalView(slotIndex) {
                     <label style="display:block; font-size:0.8rem; margin-bottom:4px;">Price</label>
                     <input type="text" class="form-field-control" value="${formatToNaira(targetPrice)}" disabled style="width:100%; padding:8px; box-sizing:border-box;">
                 </div>
-                
-                <div style="margin-top: 10px; display: flex; align-items: center; gap: 6px;">
-                    <input type="checkbox" id="paystack-autorenew-toggle" ${initialAutoRenewState ? 'checked' : ''}>
-                    <label for="paystack-autorenew-toggle" style="font-size: 0.85rem; font-weight: 600; cursor: pointer; user-select:none;">Enable Auto-Renew Subscription billing</label>
-                </div>
             </div>
             <div class="paystack-footer-row" style="padding: 16px 24px; background: #f9f9f9; border-top: 1px solid #eee; display: flex; justify-content: space-between;">
                 <button class="btn-gray" onclick="document.getElementById('paystack-checkout-modal').remove()">Cancel</button>
@@ -4209,7 +4444,7 @@ function launchPaystackPaymentCheckoutModalView(slotIndex) {
 
 function executeActualPaystackIframePopRuntime(slotIndex) {
     if (typeof PaystackPop === 'undefined') {
-        showTopRightToast("Paystack SDK not loaded! Make sure <script src=\"https://js.paystack.co/v1/inline.js\"></script> is in your HTML <head>.", "error");
+        showTopRightToast("Paystack SDK not loaded! Check your internet connection.", "error");
         return;
     }
 
@@ -4320,11 +4555,6 @@ function launchManageSlotModal(slotIndex) {
                 <select id="slot-product-mapping-dropdown" class="form-field-control" style="width:100%; padding:8px;">
                     ${dropdownSelectionHTML}
                 </select>
-            </div>
-
-            <div style="margin: 14px 0px; display: flex; align-items: center; gap: 8px; padding: 10px; background: #f9f9f9; border-radius: 4px; border: 1px solid #eee;">
-                <input type="checkbox" id="manage-autorenew-checkbox" ${slotMeta.autoRenew ? 'checked' : ''}>
-                <label for="manage-autorenew-checkbox" style="font-size:0.85rem; font-weight:700; cursor:pointer; user-select:none;">Auto-renew subscription at end of billing cycle</label>
             </div>
 
             <div style="margin-top:12px; font-size:0.8rem; color:var(--fort-gray-slate);">
@@ -4580,9 +4810,6 @@ async function executePipelineCommitUpdatedInventoryPostRecord(targetProductIdKe
     }
 }
 
-/**
- * Purges data from local repositories and remote cloud streams using inline confirmation modals.
- */
 function executeDeletePlatformInventoryItemListingPostRecord(targetProductIdKeyValueString) {
     const confirmationPromptMessage = "Are you sure you want to delete this product?";
     
@@ -4601,10 +4828,14 @@ function executeDeletePlatformInventoryItemListingPostRecord(targetProductIdKeyV
             const structuralIndexMatchPointerId = SYSTEM_DATABASE.products.findIndex(p => (p.pid === targetProductIdKeyValueString || p.id === targetProductIdKeyValueString));
             if (structuralIndexMatchPointerId !== -1) {
                 SYSTEM_DATABASE.products.splice(structuralIndexMatchPointerId, 1);
+
                 if (typeof syncPlatformDatabaseStateToWebStorage === "function") {
                     syncPlatformDatabaseStateToWebStorage();
                 }
             }
+
+            // Re-sync metric count directly from Firebase
+            syncAdminDashboardMetricsFromFirebase();
 
             showTopRightToast("Product successfully purged from system and Cloud Infrastructure layers.", "success");
             
@@ -4807,14 +5038,26 @@ function executeFilteringSettingsContentPaneRowsNodesDisplay(searchQueryStringTe
  * Detailed Profile Presentation Context Overlay Summary Modal Processing Architecture Engine
  * Renders extended data layouts, business certificates, metrics parameters, and product lists for a given user profile.
  */
-function launchDetailedUserProfileContextOverlaySummaryModal(userIdTokenKeyParameterValue) {
+function launchDetailedUserProfileContextOverlaySummaryModal(userIdTokenKeyParameterValue, pushHistory = true) {
     const targetUserObjMatchRecord = SYSTEM_DATABASE.users.find(u => u.uid === userIdTokenKeyParameterValue || u.id === userIdTokenKeyParameterValue);
-    if(!targetUserObjMatchRecord) return;
+    if (!targetUserObjMatchRecord) return;
     const standardModalBodyElementNode = document.getElementById("product-detail-modal-body");
     if (!standardModalBodyElementNode) return;
     
+    // 1. Dynamic Page Title Update
+    const userDisplayName = targetUserObjMatchRecord.businessName || targetUserObjMatchRecord.identityName || targetUserObjMatchRecord.username || 'User Profile';
+    document.title = `${userDisplayName} - Fort Mart`;
+
+    // 2. Dynamic URL PushState Update
+    if (pushHistory) {
+        const userSlug = createProductSlug(userDisplayName);
+        const targetUid = targetUserObjMatchRecord.uid || targetUserObjMatchRecord.id;
+        const newUrl = `${window.location.origin}${window.location.pathname}?user=${userSlug}&uid=${targetUid}`;
+        window.history.pushState({ uid: targetUid }, "", newUrl);
+    }
+
     let subAccountClassificationMetadataDetailsBlockHTML = "";
-    if(targetUserObjMatchRecord.accountType === 'business' || targetUserObjMatchRecord.type === 'business') {
+    if (targetUserObjMatchRecord.accountType === 'business' || targetUserObjMatchRecord.type === 'business') {
          subAccountClassificationMetadataDetailsBlockHTML = `
              <div style="background-color:var(--fort-white-snow); padding:14px; border:1px solid var(--fort-gray-border);" class="rounded-rect margin-top-xs">
                  <h5 style="text-transform:uppercase; font-size:0.7rem; color:var(--fort-gray-slate); letter-spacing:0.5px;">User's Name and Info</h5>
@@ -4929,7 +5172,7 @@ function launchDetailedUserProfileContextOverlaySummaryModal(userIdTokenKeyParam
         `;
     }
 
-    let userProfilePhotoSrc = targetUserObjMatchRecord.avatar || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a0aec0'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>";
+    let userProfilePhotoSrc = targetUserObjMatchRecord.avatar || "https://firebasestorage.googleapis.com/v0/b/fort-mart.appspot.com/o/defaults%2Fuser_avatar_placeholder.png?alt=media";
     
     standardModalBodyElementNode.innerHTML = `
         <div class="modal-expanded-header-row" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--fort-gray-border); padding-bottom:14px;">
@@ -5814,7 +6057,7 @@ function launchBusinessUpgradePaystackConfirmationModal() {
  */
 function executeBusinessUpgradePaystackIframePopRuntime() {
     if (typeof PaystackPop === 'undefined') {
-        showTopRightToast("Paystack SDK not loaded! Make sure <script src=\"https://js.paystack.co/v1/inline.js\"></script> is in your HTML <head>.", "info");
+        showTopRightToast("Paystack SDK not loaded! Check your internet connection.", "info");
         return;
     }
 
@@ -5941,3 +6184,354 @@ async function processBusinessUpgradePaymentSuccess() {
         renderMarketplaceProductsDisplayLoop();
     }
 }
+
+/**
+ * Admin User List Rendering Engine (Firestore Synchronized)
+ * Fetches user accounts live from Cloud Firestore, applies search query filters,
+ * and displays accounts sorted by creation date (newest first).
+ */
+async function renderAdminUsersManagementList() {
+    const listContainer = document.getElementById("admin-users-list-container");
+    const searchInput = document.getElementById("admin-user-search-bar");
+    if (!listContainer) return;
+
+    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
+
+    // Default SVG / Firebase Storage Fallback Assets
+    const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a0aec0'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>";
+
+    // Render Loading Feedback State
+    listContainer.innerHTML = `
+        <div style="padding: 24px; text-align: center; color: var(--fort-blue-primary, #0066cc);">
+            <div class="spinner" style="margin: 0 auto 8px auto;"></div>
+            <span style="font-size: 0.88rem; font-weight: 500;">Fetching live user registry from Cloud Firestore...</span>
+        </div>
+    `;
+
+    let rawUsersList = [];
+
+    // 1. Fetch live user data directly from Firestore or fall back to local state
+    try {
+        if (window.FortMartFirebase && window.FortMartFirebase.db) {
+            const { db, collection, getDocs } = window.FortMartFirebase;
+            const usersSnapshot = await getDocs(collection(db, "users"));
+            
+            usersSnapshot.forEach(doc => {
+                rawUsersList.push({ uid: doc.id, ...doc.data() });
+            });
+            
+            // Keep system database memory cache in sync
+            if (typeof SYSTEM_DATABASE !== "undefined") {
+                SYSTEM_DATABASE.users = rawUsersList;
+            }
+        } else if (typeof SYSTEM_DATABASE !== "undefined" && Array.isArray(SYSTEM_DATABASE.users)) {
+            rawUsersList = [...SYSTEM_DATABASE.users];
+        }
+    } catch (err) {
+        console.error("Firestore Error: Failed to fetch users list.", err);
+        listContainer.innerHTML = `
+            <div style="padding: 16px; color: #c53030; background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px; text-align: center; font-size: 0.85rem;">
+                ⚠️ Failed to load user accounts from Cloud Database: ${err.message || "Network Error"}
+            </div>
+        `;
+        return;
+    }
+
+    // 2. Filter out administrative self-accounts and execute multi-field search matching
+    let filteredUsers = rawUsersList.filter(u => {
+        const userId = u.uid || u.id || "";
+        if (userId === 'admin' || userId === 'user_sarah' || userId === 'account_manager') return false;
+
+        const nameMatch = (u.identityName || u.username || u.businessName || '').toLowerCase().includes(searchTerm);
+        const emailMatch = (u.identifierText || u.email || '').toLowerCase().includes(searchTerm);
+        const statusMatch = (u.verificationStatus || u.status || '').toLowerCase().includes(searchTerm);
+        const typeMatch = (u.accountType || u.type || '').toLowerCase().includes(searchTerm);
+
+        return nameMatch || emailMatch || statusMatch || typeMatch;
+    });
+
+    // 3. Sort accounts chronologically from newest created to oldest created
+    filteredUsers.sort((a, b) => {
+        const extractTime = (record) => {
+            if (record.createdAt) {
+                return new Date(record.createdAt).getTime() || 0;
+            }
+            const idStr = String(record.uid || record.id || "");
+            const parsedTs = parseInt(idStr.replace("user_", ""), 10);
+            return isNaN(parsedTs) ? 0 : parsedTs;
+        };
+
+        return extractTime(b) - extractTime(a);
+    });
+
+    // 4. Render account listing DOM nodes or empty state feedback
+    if (filteredUsers.length === 0) {
+        listContainer.innerHTML = `
+            <div style="padding: 20px; color: var(--fort-gray-slate, #64748b); text-align: center; font-style: italic; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px;">
+                No registered user accounts found matching criteria.
+            </div>
+        `;
+        return;
+    }
+
+    let listHTML = "";
+    filteredUsers.forEach(user => {
+        const userId = user.uid || user.id;
+        const displayName = user.identityName || user.businessName || user.username || "Unnamed User";
+        const email = user.identifierText || user.email || "No Contact";
+        const accountType = user.accountType || user.type || "personal";
+        const status = user.verificationStatus || user.status || "unverified";
+        const avatar = user.avatar && user.avatar.trim() !== "" ? user.avatar : DEFAULT_AVATAR;
+
+        const isVerified = status === "verified";
+        const badgeBg = isVerified ? "#e6fffa" : "#fff5f5";
+        const badgeColor = isVerified ? "#234e52" : "#9b2c2c";
+        const badgeBorder = isVerified ? "#b2f5ea" : "#feb2b2";
+
+        listHTML += `
+            <div class="admin-user-card-item" onclick="launchDetailedUserProfileContextOverlaySummaryModal('${userId}')" style="display:flex; align-items:center; gap:12px; padding:10px 14px; background:#fff; border:1px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:all 0.2s; margin-bottom:8px;" onmouseover="this.style.borderColor='#cbd5e0'; this.style.background='#f8fafc';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.background='#fff';">
+                <img src="${avatar}" style="width:42px; height:42px; border-radius:50%; object-fit:cover; border:1px solid #cbd5e0;" alt="Avatar" onerror="this.src='${DEFAULT_AVATAR}'">
+                <div style="flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <h4 style="margin:0; font-size:0.92rem; color:var(--fort-blue-dark, #1e293b); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${displayName}</h4>
+                        <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; padding:2px 6px; border-radius:4px; background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeBorder};">${status}</span>
+                    </div>
+                    <div style="font-size:0.8rem; color:var(--fort-gray-slate, #64748b); margin-top:2px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                        Email: <strong>${email}</strong> | Type: <span style="text-transform:capitalize;">${accountType}</span> 
+                    </div>
+                </div>
+                <button class="btn-blue" style="padding:4px 10px; font-size:0.75rem; shrink:0;" onclick="event.stopPropagation(); launchDetailedUserProfileContextOverlaySummaryModal('${userId}')">Manage</button>
+            </div>
+        `;
+    });
+
+    listContainer.innerHTML = listHTML;
+}
+
+/**
+ * Utility Slug Generator Function for Clean URLs
+ */
+function createProductSlug(textString) {
+    if (!textString) return "item";
+    return textString
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-')           // Replace spaces with -
+        .replace(/[^\w\-]+/g, '')       // Remove non-word characters
+        .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+        .replace(/^-+/, '')             // Trim - from start
+        .replace(/-+$/, '');            // Trim - from end
+}
+
+/**
+ * Close modal directly and reset URL & document title to baseline state.
+ */
+function closeActiveModalDirectly(modalId = 'product-detail-modal') {
+    const modalTarget = document.getElementById(modalId);
+    if (modalTarget) {
+        modalTarget.classList.remove("active");
+    }
+
+    // Reset document title to application default
+    document.title = "Fort Mart - Marketplace";
+
+    // Clean query parameters from URL without triggering page reload
+    if (window.location.search) {
+        const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+        window.history.pushState({}, "", cleanUrl);
+    }
+}
+
+/**
+ * Synonym alias pointing to closeActiveModalDirectly
+ */
+function closeProductSpecificationOverlay() {
+    closeActiveModalDirectly('product-detail-modal');
+}
+
+/**
+ * URL Routing Handler: Parses query strings (`?product=...&pid=...` or `?user=...&uid=...`) 
+ * on direct link hits or browser Back/Forward back-history navigation.
+ */
+async function handleProductUrlRouting() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const pid = urlParams.get('pid');
+    const uid = urlParams.get('uid');
+
+    if (pid) {
+        // Pass false so pushState isn't duplicated on page load/popstate
+        await launchComprehensiveProductSpecificationsExpandedModalView(pid, false);
+    } else if (uid) {
+        launchDetailedUserProfileContextOverlaySummaryModal(uid, false);
+    } else {
+        // Ensure modal is hidden if no query params exist
+        const modal = document.getElementById("product-detail-modal");
+        if (modal && modal.classList.contains("active")) {
+            modal.classList.remove("active");
+            document.title = "Fort Mart - Marketplace";
+        }
+    }
+}
+
+// Window Event Listeners
+window.addEventListener("popstate", () => {
+    handleProductUrlRouting();
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+    handleProductUrlRouting();
+});
+
+const ad1 = {
+    type: 'image',
+    header: 'Need a Custom Website!',
+    text: 'Try Fort Developers (createawebsite.fort.com)',
+    src: 'flyer fort - landscape.png',
+    url: 'https://createawebsite.fort.com'
+};
+
+const ad2 = {
+    type: 'image',
+    header: 'Need a Custom Website!',
+    text: 'Try Fort Developers (createawebsite.fort.com)',
+    src: 'flyer fort - landscape.png',
+    url: 'https://createawebsite.fort.com'
+};
+
+const ads = [ad1, ad2];
+
+function setupAdModal() {
+    // Retrieve previous index from localStorage, or default to -1 if not set
+    let lastIndex = parseInt(localStorage.getItem('lastAdIndex'), 10);
+    if (isNaN(lastIndex)) {
+        lastIndex = -1;
+    }
+
+    // Calculate next index in sequence (loops back to 0 when end is reached)
+    const nextIndex = (lastIndex + 1) % ads.length;
+    
+    // Save current index for the next run
+    localStorage.setItem('lastAdIndex', nextIndex);
+
+    const currentAd = ads[nextIndex];
+
+    const headerEl = document.getElementById('ad-header');
+    const textEl = document.getElementById('ad-text');
+    const mediaContainer = document.getElementById('ad-media-container');
+    const continueBtn = document.getElementById('ad-continue-btn');
+    const visitBtn = document.getElementById('ad-visit-btn');
+
+    // Populate header, text, and visit button
+    headerEl.innerText = currentAd.header;
+    textEl.innerHTML = `<strong>${currentAd.text}</strong>`;
+    
+    if (visitBtn) {
+        visitBtn.href = currentAd.url;
+    }
+
+    mediaContainer.innerHTML = '';
+    
+    // Open URL when clicking the container (opens in new tab)
+    mediaContainer.style.cursor = 'pointer';
+    mediaContainer.onclick = (e) => {
+        // Prevent triggering redirect if the user interacts with video controls
+        if (e.target.tagName !== 'VIDEO') {
+            window.open(currentAd.url, '_blank', 'noopener,noreferrer');
+        }
+    };
+
+    // Render appropriate media element
+    if (currentAd.type === 'video') {
+        const video = document.createElement('video');
+        video.src = currentAd.src;
+        video.autoplay = true;
+        video.muted = true; // Required for reliable autoplay across browsers
+        video.playsInline = true;
+        video.controls = true;
+        
+        // Open URL when clicking video background without triggering play/pause controls conflict
+        video.addEventListener('click', (e) => {
+            // If controls area isn't being clicked directly
+            e.stopPropagation();
+            window.open(currentAd.url, '_blank', 'noopener,noreferrer');
+        });
+
+        mediaContainer.appendChild(video);
+    } else {
+        const img = document.createElement('img');
+        img.src = currentAd.src;
+        img.alt = currentAd.header;
+        mediaContainer.appendChild(img);
+    }
+
+    // Enforce 7-second timer for ALL ad types
+    continueBtn.disabled = true;
+    let countdown = 7;
+    continueBtn.innerText = `Continue in ${countdown}s`;
+
+    const timer = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+            continueBtn.innerText = `Continue in ${countdown}s`;
+        } else {
+            clearInterval(timer);
+            continueBtn.disabled = false;
+            continueBtn.innerText = 'Continue';
+        }
+    }, 1000);
+}
+
+function closeActiveModalDirectlyAd(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+window.addEventListener('DOMContentLoaded', setupAdModal);
+
+/**
+ * Fetches total document counts directly from Firebase Firestore 
+ * and updates the Admin Dashboard counter UI nodes.
+ */
+/**
+ * Example: Real-time Admin Dashboard Metrics directly from Firebase Server
+ */
+async function syncAdminDashboardMetricsFromFirebase() {
+    try {
+        // Count total users
+        const usersCol = collection(db, "users");
+        const usersCount = await getCountFromServer(usersCol);
+
+        // Count total products
+        const productsCol = collection(db, "products");
+        const productsCount = await getCountFromServer(productsCol);
+
+        // Update UI counters if elements exist
+        const totalUsersEl = document.getElementById("admin-metric-total-users");
+        const totalProductsEl = document.getElementById("admin-metric-total-products");
+
+        if (totalUsersEl) totalUsersEl.innerText = usersCount;
+        if (totalProductsEl) totalProductsEl.innerText = productsCount;
+
+        console.log(`Metrics fetched: ${usersCount} users, ${productsCount} products.`);
+    } catch (err) {
+        console.error("Failed to fetch server counts:", err);
+    }
+}
+
+/**
+ * Ensures counts are loaded from Firebase when the web page boots up
+ */
+document.addEventListener("DOMContentLoaded", () => {
+    // Delay slightly if needed to allow FortMartFirebase SDK script to finish loading
+    if (window.FortMartFirebase && window.FortMartFirebase.db) {
+        syncAdminDashboardMetricsFromFirebase();
+    } else {
+        // Fallback retry if SDK loads asynchronously
+        window.addEventListener("load", () => {
+            syncAdminDashboardMetricsFromFirebase();
+        });
+    }
+});
