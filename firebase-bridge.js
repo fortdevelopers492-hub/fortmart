@@ -161,7 +161,7 @@ export async function registerNewUserAccountRecord(signUpWizardData, profilePict
         dialingCode: signUpWizardData.dialingCode || "+234",
         identifierText: signUpWizardData.identifierText, // email/phone entry string mapping
         secretKey: signUpWizardData.secretKey,
-        avatar: profileImageUrlStr || "fort mart logo.png",
+        avatar: profileImageUrlStr || "fort-mart-logo.png",
         verificationStatus: "verified", // User Correction Ledger Explicit Rule: Default state for new users is verified
         businessName: signUpWizardData.businessName || signUpWizardData.identityName,
         businessInfo: signUpWizardData.businessInfo || "No descriptions detailed yet."
