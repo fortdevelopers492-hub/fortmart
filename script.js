@@ -1718,15 +1718,10 @@ function handleCategorySearch(searchStringQuery) {
 
 /**
  * CORE GRID RENDERING SYSTEM
- * Fetches real-time localized listings and handles empty/error states explicitly.
- * Integrates Firebase Storage download URL resolutions for cloud-stored images.
+ * Fetches real-time localized listings or reads from local browser cache during scroll/re-render.
+ * Products and users are re-fetched from Firebase only when forceFetch is set to true.
  */
-/**
- * CORE GRID RENDERING SYSTEM
- * Fetches real-time localized listings, sorts normal products by clickCount descending,
- * and handles empty/error states explicitly.
- */
-async function renderMarketplaceProductsDisplayLoop() {
+async function renderMarketplaceProductsDisplayLoop(forceFetch = false) {
     const loopDisplayTargetGrid = document.getElementById("products-display-grid");
     if (!loopDisplayTargetGrid) return;
     
@@ -1754,16 +1749,55 @@ async function renderMarketplaceProductsDisplayLoop() {
     const FIREBASE_STORAGE_DEFAULT_PRODUCT_IMAGE = "https://firebasestorage.googleapis.com/v0/b/fort-mart.appspot.com/o/defaults%2Fproduct_placeholder.png?alt=media";
     const FIREBASE_STORAGE_DEFAULT_AVATAR = "https://firebasestorage.googleapis.com/v0/b/fort-mart.appspot.com/o/defaults%2Fuser_avatar_placeholder.png?alt=media";
 
+    // Helper: Local Storage/Session Storage Caching Helpers
+    const CACHE_KEYS = {
+        PRODUCTS: 'FORTMART_CACHE_PRODUCTS',
+        USERS: 'FORTMART_CACHE_USERS',
+        META: 'FORTMART_CACHE_SYSTEM_META',
+        RESOLVED_URLS: 'FORTMART_CACHE_RESOLVED_URLS'
+    };
+
+    function getLocalCache(key) {
+        try {
+            const data = sessionStorage.getItem(key);
+            return data ? JSON.parse(data) : null;
+        } catch (e) {
+            console.warn(`Failed reading ${key} from sessionStorage:`, e);
+            return null;
+        }
+    }
+
+    function setLocalCache(key, value) {
+        try {
+            sessionStorage.setItem(key, JSON.stringify(value));
+        } catch (e) {
+            console.warn(`Failed writing ${key} to sessionStorage:`, e);
+        }
+    }
+
+    // Storage URL Resolver with local caching
     async function resolveFirebaseStorageUrl(imageRefOrUrl, fallbackUrl) {
         if (!imageRefOrUrl) return fallbackUrl;
         if (imageRefOrUrl.startsWith("http://") || imageRefOrUrl.startsWith("https://") || imageRefOrUrl.startsWith("data:")) {
             return imageRefOrUrl;
         }
+
+        const urlCache = getLocalCache(CACHE_KEYS.RESOLVED_URLS) || {};
+        if (urlCache[imageRefOrUrl]) {
+            return urlCache[imageRefOrUrl];
+        }
+
         try {
             if (window.FortMartFirebase && window.FortMartFirebase.storage && window.FortMartFirebase.ref && window.FortMartFirebase.getDownloadURL) {
                 const { storage, ref, getDownloadURL } = window.FortMartFirebase;
                 const storageRef = ref(storage, imageRefOrUrl);
-                return await getDownloadURL(storageRef);
+                const resolvedUrl = await getDownloadURL(storageRef);
+                
+                // Cache resolved URL
+                urlCache[imageRefOrUrl] = resolvedUrl;
+                setLocalCache(CACHE_KEYS.RESOLVED_URLS, urlCache);
+                
+                return resolvedUrl;
             }
         } catch (storageErr) {
             console.warn(`Could not resolve Firebase Storage reference [${imageRefOrUrl}]:`, storageErr);
@@ -1772,10 +1806,26 @@ async function renderMarketplaceProductsDisplayLoop() {
     }
 
     try {
-        if (window.FortMartFirebase) {
+        const cachedProducts = getLocalCache(CACHE_KEYS.PRODUCTS);
+        const cachedUsers = getLocalCache(CACHE_KEYS.USERS);
+        const cachedMeta = getLocalCache(CACHE_KEYS.META);
+
+        // Check if cached data exists and forceFetch is false
+        if (!forceFetch && cachedProducts && cachedUsers && cachedMeta) {
+            activeProductsList = cachedProducts;
+            activeUsersCache = cachedUsers;
+            leaderboard = cachedMeta.pinnedLeaderboard || [];
+            adminSlotPid = cachedMeta.adminSlot || null;
+
+            SYSTEM_DATABASE.products = activeProductsList;
+            SYSTEM_DATABASE.users = activeUsersCache;
+            SYSTEM_DATABASE.pinnedLeaderboard = leaderboard;
+            SYSTEM_DATABASE.adminSlot = adminSlotPid;
+        } else if (window.FortMartFirebase) {
+            // Fetch directly from Firebase
             const { db, collection, getDocs } = window.FortMartFirebase;
             
-            // Fetch System Metadata
+            // 1. Fetch System Metadata
             try {
                 const systemMetaRef = await getDocs(collection(db, "system_metadata"));
                 systemMetaRef.forEach(doc => {
@@ -1787,23 +1837,26 @@ async function renderMarketplaceProductsDisplayLoop() {
                 });
                 SYSTEM_DATABASE.pinnedLeaderboard = leaderboard;
                 SYSTEM_DATABASE.adminSlot = adminSlotPid;
+                setLocalCache(CACHE_KEYS.META, { pinnedLeaderboard: leaderboard, adminSlot: adminSlotPid });
             } catch (metaErr) {
                 console.warn("Unable to fetch system_metadata collection:", metaErr);
             }
 
-            // Fetch Products
+            // 2. Fetch Products
             const productsSnapshot = await getDocs(collection(db, "products"));
             productsSnapshot.forEach(doc => {
                 activeProductsList.push({ pid: doc.id, ...doc.data() });
             });
             SYSTEM_DATABASE.products = activeProductsList;
+            setLocalCache(CACHE_KEYS.PRODUCTS, activeProductsList);
 
-            // Fetch Users
+            // 3. Fetch Users
             const usersSnapshot = await getDocs(collection(db, "users"));
             usersSnapshot.forEach(doc => {
                 activeUsersCache.push({ uid: doc.id, ...doc.data() });
             });
             SYSTEM_DATABASE.users = activeUsersCache;
+            setLocalCache(CACHE_KEYS.USERS, activeUsersCache);
 
         } else {
             activeProductsList = [...(SYSTEM_DATABASE.products || [])];
@@ -1851,7 +1904,7 @@ async function renderMarketplaceProductsDisplayLoop() {
                     <p style="color: #64748b; font-size: 0.9rem; max-width: 400px; margin: 0 auto 16px auto;">
                         We couldn't find any products listed for <strong>${locationFilteringCriteriaString}</strong> in the <strong>${APP_STATE.currentSelectedCategory}</strong> category.
                     </p>
-                    <button class="btn-blue" style="padding: 8px 16px; font-size: 0.85rem;" onclick="APP_STATE.searchQuery=''; APP_STATE.currentSelectedCategory='Trending'; renderMarketplaceProductsDisplayLoop();">
+                    <button class="btn-blue" style="padding: 8px 16px; font-size: 0.85rem;" onclick="APP_STATE.searchQuery=''; APP_STATE.currentSelectedCategory='Trending'; renderMarketplaceProductsDisplayLoop(false);">
                         Reset Filters
                     </button>
                 </div>
@@ -1914,7 +1967,7 @@ async function renderMarketplaceProductsDisplayLoop() {
                 <div style="font-size: 2rem; margin-bottom: 8px;">⚠️</div>
                 <h4 style="color: #c53030; margin-bottom: 6px;">Failed to Load Products</h4>
                 <p style="color: #742a2a; font-size: 0.85rem; margin-bottom: 12px;">${err.message || 'Unable to communicate with Firebase Firestore.'}</p>
-                <button class="btn-blue" style="padding: 6px 14px; font-size: 0.8rem;" onclick="renderMarketplaceProductsDisplayLoop();">
+                <button class="btn-blue" style="padding: 6px 14px; font-size: 0.8rem;" onclick="renderMarketplaceProductsDisplayLoop(true);">
                     🔄 Retry Connection
                 </button>
             </div>
@@ -1923,13 +1976,13 @@ async function renderMarketplaceProductsDisplayLoop() {
 }
 
 /**
- * Native Share handler for product modal
+ * Native Share handler for product modal (Firebase Integrated)
  */
 async function shareProductModalDetails(productId) {
     const detailOverlayBodyNode = document.getElementById("product-detail-modal-body");
     if (!detailOverlayBodyNode) return;
 
-    // Fetch product details for URL/text formatting
+    // 1. Fetch live product details from Firebase Firestore
     let product = null;
     if (window.FortMartFirebase) {
         try {
@@ -1940,81 +1993,75 @@ async function shareProductModalDetails(productId) {
                 product = { pid: productSnapshot.id, ...productSnapshot.data() };
             }
         } catch (e) {
-            console.warn("Failed to fetch product for share text from Firebase:", e);
+            console.warn("Failed to fetch product details from Firebase:", e);
         }
     }
 
+    // Fallback to local state if Firebase fails or is offline
     if (!product) {
         product = (SYSTEM_DATABASE.products || []).find(p => p.pid === productId) || {
             pid: productId,
-            name: "Product"
+            name: "Product",
+            info: "No details specified.",
+            aiInfo: "No extra specifications specified."
         };
     }
 
-    // 1. Create temporary off-screen clone for DOM snapshot
-    const clone = detailOverlayBodyNode.cloneNode(true);
-    clone.style.position = "absolute";
-    clone.style.top = "-9999px";
-    clone.style.left = "-9999px";
-    clone.style.width = detailOverlayBodyNode.offsetWidth + "px";
-    clone.style.backgroundColor = "#ffffff";
-    clone.style.padding = "20px";
-    clone.style.borderRadius = "8px";
+    const FIREBASE_STORAGE_DEFAULT_PRODUCT_IMAGE = "https://firebasestorage.googleapis.com/v0/b/fort-mart.appspot.com/o/defaults%2Fproduct_placeholder.png?alt=media";
 
-    // 2. Apply snapshot transformations
-    const headerTitle = clone.querySelector("h3");
-    if (headerTitle) {
-        headerTitle.textContent = "Product Details - Fort Mart";
+    // Helper to resolve Firebase Storage reference or fallback to raw URL
+    async function resolveFirebaseStorageUrl(imageRefOrUrl, fallbackUrl) {
+        if (!imageRefOrUrl) return fallbackUrl;
+        if (imageRefOrUrl.startsWith("http://") || imageRefOrUrl.startsWith("https://") || imageRefOrUrl.startsWith("data:")) {
+            return imageRefOrUrl;
+        }
+        try {
+            if (window.FortMartFirebase && window.FortMartFirebase.storage && window.FortMartFirebase.ref && window.FortMartFirebase.getDownloadURL) {
+                const { storage, ref, getDownloadURL } = window.FortMartFirebase;
+                const storageRef = ref(storage, imageRefOrUrl);
+                return await getDownloadURL(storageRef);
+            }
+        } catch (e) {
+            console.warn("Storage resolution warning:", e);
+        }
+        return fallbackUrl;
     }
-
-    const closeBtn = clone.querySelector(".modal-expanded-header-row button");
-    if (closeBtn) closeBtn.remove();
-
-    const actionsFooter = clone.querySelector(".modal-expanded-actions-footer-row");
-    if (actionsFooter) actionsFooter.remove();
-
-    // Remove Admin Controls Hub if rendered
-    const adminControls = clone.querySelector("div[style*='border: 1px dashed']");
-    if (adminControls) adminControls.remove();
-
-    // Append 'Visit mart.fort-site.com.ng' to indicated left-column section
-    const leftColumn = clone.querySelector(".expanded-left-visuals-column");
-    if (leftColumn) {
-        const visitTag = document.createElement("div");
-        visitTag.style.marginTop = "15px";
-        visitTag.style.fontWeight = "bold";
-        visitTag.style.color = "var(--fort-blue-dark, #1a365d)";
-        visitTag.style.fontSize = "14px";
-        visitTag.textContent = "Visit mart.fort-site.com.ng";
-        leftColumn.appendChild(visitTag);
-    }
-
-    document.body.appendChild(clone);
 
     try {
-        // Dynamically load html2canvas library if not already included
-        if (typeof html2canvas === "undefined") {
-            await new Promise((resolve, reject) => {
-                const script = document.createElement("script");
-                script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            });
-        }
+        // 2. Resolve image source (DOM target fallback to product metadata)
+        const DOMProductImg = detailOverlayBodyNode.querySelector(".expanded-master-image-box img");
+        let rawImageUrl = DOMProductImg ? DOMProductImg.src : product.coverPhoto;
+        const finalImageUrl = await resolveFirebaseStorageUrl(rawImageUrl, FIREBASE_STORAGE_DEFAULT_PRODUCT_IMAGE);
 
-        const canvas = await html2canvas(clone, { useCORS: true, logging: false });
-        document.body.removeChild(clone);
+        // 3. Download product image into memory as Blob/File
+        const imageResponse = await fetch(finalImageUrl, { mode: 'cors' });
+        const imageBlob = await imageResponse.blob();
+        
+        const productSlug = typeof createProductSlug === "function" 
+            ? createProductSlug(product.name) 
+            : product.name.toLowerCase().replace(/\s+/g, '-');
 
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-        const productSlug = createProductSlug(product.name);
         const imageFileName = `${productSlug}.png`;
-        const imageFile = new File([blob], imageFileName, { type: 'image/png' });
+        const imageFile = new File([imageBlob], imageFileName, { type: imageBlob.type || 'image/png' });
 
+        // 4. Build text body with complete details & specs
         const shareUrl = `${window.location.origin}${window.location.pathname}?product=${productSlug}&pid=${product.pid}`;
-        const shareText = `${shareUrl}\n${product.name} | Fort Mart\nThis product was shared from Fort Mart - mart.fort-site.com.ng`;
+        const currencySymbol = (APP_STATE.currentUser && APP_STATE.currentUser.country === 'Nigeria') ? '₦' : '$';
 
-        // 3. Native Device Share Execution
+        const shareText = 
+`${product.name} | Fort Mart
+Price: ${currencySymbol}${product.price ? parseFloat(product.price).toLocaleString() : 'N/A'}
+
+Description:
+${product.info || 'No details specified.'}
+
+Specifications:
+${product.aiInfo || 'No extra specifications specified.'}
+
+Link: ${shareUrl}
+Shared via Fort Mart - mart.fort-site.com.ng`;
+
+        // 5. Trigger native share passing product image file
         if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
             await navigator.share({
                 title: `${product.name} | Fort Mart`,
@@ -2028,23 +2075,20 @@ async function shareProductModalDetails(productId) {
                 url: shareUrl
             });
         } else {
-            // Desktop/Browser Fallback
+            // Desktop fallback: Copy text to clipboard and download image
             await navigator.clipboard.writeText(shareText);
 
             const downloadLink = document.createElement("a");
-            downloadLink.href = URL.createObjectURL(blob);
+            downloadLink.href = URL.createObjectURL(imageBlob);
             downloadLink.download = imageFileName;
             document.body.appendChild(downloadLink);
             downloadLink.click();
             document.body.removeChild(downloadLink);
             URL.revokeObjectURL(downloadLink.href);
 
-            alert("Share details copied to clipboard and product specification image downloaded!");
+            alert("Product details copied to clipboard and product image downloaded!");
         }
     } catch (error) {
-        if (document.body.contains(clone)) {
-            document.body.removeChild(clone);
-        }
         console.error("Error executing share pipeline:", error);
     }
 }
@@ -2564,6 +2608,32 @@ window.closeActiveModalDirectly = function(modalIdString) {
 
 // Core Global Structural Reference Tracking Flags for Realtime Streaming
 let ACTIVE_CHAT_REALTIME_UNSUBSCRIBE_WORKER = null;
+let ROSTER_CHAT_REALTIME_UNSUBSCRIBE_WORKER = null;
+
+/**
+ * Initializes real-time listener for the user's entire conversation list roster.
+ * Ensures the thread roster auto-updates live when new messages arrive.
+ */
+function initializeRealtimeUserConversationsRoster() {
+    if (typeof ROSTER_CHAT_REALTIME_UNSUBSCRIBE_WORKER === "function") {
+        ROSTER_CHAT_REALTIME_UNSUBSCRIBE_WORKER();
+        ROSTER_CHAT_REALTIME_UNSUBSCRIBE_WORKER = null;
+    }
+
+    if (!APP_STATE.currentUser || !window.FortMartFirebase) return;
+    const { db, collection, query, where, onSnapshot } = window.FortMartFirebase;
+
+    const rosterQuery = query(
+        collection(db, "messages"),
+        where("deletedBy", "not-in", [[APP_STATE.currentUser.uid]])
+    );
+
+    ROSTER_CHAT_REALTIME_UNSUBSCRIBE_WORKER = onSnapshot(rosterQuery, () => {
+        renderUserConversationsLogRoster();
+    }, (err) => {
+        console.error("Roster realtime stream sync error:", err);
+    });
+}
 
 function renderUserConversationsLogRoster() {
     const logContainerTargetNode = document.getElementById("chat-threads-target-list");
@@ -2575,7 +2645,6 @@ function renderUserConversationsLogRoster() {
     
     // --- FEATURE: SPECIAL ADMIN BROADCAST CHANNEL CONTROLS ---
     if (APP_STATE.currentUser.uid === 'admin') {
-        // Render All Personal Accounts Node Channel
         const personalBroadcastNode = document.createElement("div");
         personalBroadcastNode.className = `chat-thread-roster-row broadcast-system-node ${APP_STATE.activeChatTargetUserHash === 'broadcast_personal' ? 'active' : ''}`;
         personalBroadcastNode.onclick = () => activateMessengerConversationWorkspaceSessionBlock('broadcast_personal');
@@ -2588,7 +2657,6 @@ function renderUserConversationsLogRoster() {
         `;
         logContainerTargetNode.appendChild(personalBroadcastNode);
 
-        // Render All Business Accounts Node Channel
         const businessBroadcastNode = document.createElement("div");
         businessBroadcastNode.className = `chat-thread-roster-row broadcast-system-node ${APP_STATE.activeChatTargetUserHash === 'broadcast_business' ? 'active' : ''}`;
         businessBroadcastNode.onclick = () => activateMessengerConversationWorkspaceSessionBlock('broadcast_business');
@@ -2602,9 +2670,8 @@ function renderUserConversationsLogRoster() {
         logContainerTargetNode.appendChild(businessBroadcastNode);
     }
     
-    // Track matching historical stream records blocks inside systems execution memory databases maps sets
     const computedMatchingDialoguesArray = SYSTEM_DATABASE.chats.filter(c => c.dynamicParticipants.includes(APP_STATE.currentUser.uid));
-    // --- FEATURE: RECENCY SORTING METHOD ---
+    
     computedMatchingDialoguesArray.sort((a, b) => {
         const getLatestMessageTimeToken = (threadInstance) => {
             if (!threadInstance.messageLog || threadInstance.messageLog.length === 0) return 0;
@@ -2637,7 +2704,6 @@ function renderUserConversationsLogRoster() {
             if(!structuralLabelDisplayExpressionString.toLowerCase().includes(APP_STATE.searchQuery)) return;
         }
         
-        // Filter out locally deleted preview lines
         const activeMessages = thread.messageLog.filter(m => !m.deletedBy || !m.deletedBy.includes(APP_STATE.currentUser.uid));
         const lastMessageLogEntry = activeMessages[activeMessages.length - 1];
         
@@ -2751,12 +2817,12 @@ function initializeFirebaseRealtimeMessageStream(currentUserId, activePartnerId)
                 mid: docNode.id,
                 senderUid: dataPayload.senderUid,
                 text: dataPayload.text,
-                timestamp: resolvedTimeString,
+                timestamp: resolvedTimeString || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 status: dataPayload.status || "single",
                 isFile: dataPayload.isFile || false,
                 isImage: dataPayload.isImage || false,
                 isVideo: dataPayload.isVideo || false,
-                fileData: dataPayload.fileData || null,
+                fileData: dataPayload.fileData || null, // Firebase Storage HTTP Download URL
                 deletedBy: dataPayload.deletedBy || [],
                 isDeletedForAll: dataPayload.isDeletedForAll || false
             });
@@ -2812,8 +2878,8 @@ function activateMessengerConversationWorkspaceSessionBlock(targetCounterpartyUi
                     <button onclick="event.stopPropagation(); closePhoneConversationOverlayViewBlock()" class="mobile-close-chat-btn" style="background:none; border:none; color:#fff; font-size:1.3rem; margin-right:8px; padding:0 5px; cursor:pointer;">
                         ←
                     </button>
-                    <img src="${counterpartyUserRecord.avatar || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23ffffff\'><path d=\'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z\'/></svg>'}" style="width:32px; height:32px;" class="circle-container" alt="User Avatar Image Context">
-                    <span style="font-weight:600; font-size:0.9rem;">${counterpartyUserRecord.identityName}</span>
+                    <img src="${(counterpartyUserRecord && counterpartyUserRecord.avatar) || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23ffffff\'><path d=\'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z\'/></svg>'}" style="width:32px; height:32px;" class="circle-container" alt="User Avatar Image Context">
+                    <span style="font-weight:600; font-size:0.9rem;">${counterpartyUserRecord ? counterpartyUserRecord.identityName : 'User'}</span>
                 </div>
                 <div class="toolbar-buttons-sets" style="display:flex; gap:8px;">
                     <button class="btn-danger" style="padding:4px 10px; font-size:0.75rem;" onclick="executeWipeEntireDialogueLogsHistoryContextChain()">Clear Chat</button>
@@ -2858,7 +2924,6 @@ function refreshMessengerActiveStreamBubblesDisplayList() {
     }
     
     operationalThreadRecordData.messageLog.forEach(msg => {
-        // --- FEATURE: UNILATERAL PURGE SKIP INTERCEPTOR ---
         if (msg.deletedBy && msg.deletedBy.includes(APP_STATE.currentUser.uid)) return;
 
         const outboundFlagCondition = msg.senderUid === APP_STATE.currentUser.uid;
@@ -2871,7 +2936,6 @@ function refreshMessengerActiveStreamBubblesDisplayList() {
         let bodyLayoutHTML = "";
         let downloadControlHTML = "";
         
-        // --- FEATURE: FORMAT DELETED PAYLOAD GLOBAL STATE ---
         if (msg.isDeletedForAll) {
             bodyLayoutHTML = `<p style="word-break:break-word; font-style:italic; opacity:0.75;">this message was deleted</p>`;
         } else if (msg.isFile) {
@@ -2885,10 +2949,7 @@ function refreshMessengerActiveStreamBubblesDisplayList() {
             } else if (msg.isVideo) {
                 bodyLayoutHTML = `
                     <div style="display: block; position: relative; max-width: 240px; border-radius: 6px; overflow: hidden; background: #000; margin-bottom: 4px;">
-                        <video src="${msg.fileData}" style="width: 100%; height: auto; display: block; pointer-events: none;" preload="metadata"></video>
-                        <div style="position: absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.35);">
-                            <span style="font-size: 2rem; color: #fff; opacity: 0.85;">▶</span>
-                        </div>
+                        <video src="${msg.fileData}" style="width: 100%; height: auto; display: block;" controls preload="metadata"></video>
                     </div>
                     <p style="word-break:break-word; font-size:0.78rem; color:inherit; opacity:0.85; margin:0; display:flex; align-items:center; gap:4px;">🎥 ${msg.text}</p>
                 `;
@@ -2987,7 +3048,6 @@ async function sendChatMessageDirect() {
     if(operationalThreadRecordData) {
         textInputNodeElement.value = "";
 
-        // --- RETENTION POLICY UPDATE: 60 DAYS ---
         const sixtyDayRetentionHorizonMs = 60 * 24 * 60 * 60 * 1000;
         const expectedAutoDeletionDeadlineDate = new Date(Date.now() + sixtyDayRetentionHorizonMs);
 
@@ -3011,17 +3071,20 @@ async function sendChatMessageDirect() {
                     ...messagePayload,
                     serverTimestamp: serverTimestamp()
                 });
+                executeAutoReplyEvaluationProcessFrame(operationalThreadRecordData);
             } catch (err) {
                 console.error("Database tracking fault dispatching payload message cluster:", err);
-                // Fallback locally to flag a failed state to the user interface pipeline
                 flagLocalTemporaryTransmissionFailure(operationalThreadRecordData, messagePayload);
             }
         }
-        
     }
 }
 
-function handleMessageAttachedFileSelectionEvent(inputNodeContextElement) {
+/**
+ * Handles binary file attachments with Firebase Cloud Storage upload.
+ * Stores the Cloud Storage Public URL in Firestore instead of base64 data strings.
+ */
+async function handleMessageAttachedFileSelectionEvent(inputNodeContextElement) {
     if (!inputNodeContextElement.files || inputNodeContextElement.files.length === 0) return;
     if (!APP_STATE.currentUser || !APP_STATE.activeChatTargetUserHash) return;
     if (APP_STATE.activeChatTargetUserHash === 'admin') {
@@ -3034,14 +3097,27 @@ function handleMessageAttachedFileSelectionEvent(inputNodeContextElement) {
     const checkIsImageFormatCondition = singleFileReference.type.startsWith('image/');
     const checkIsVideoFormatCondition = singleFileReference.type.startsWith('video/');
     
-    const fileStorageProcessingReader = new FileReader();
-    
-    fileStorageProcessingReader.onload = async function(readerEvent) {
+    if (!window.FortMartFirebase || !window.FortMartFirebase.storage) {
+        showTopRightToast("Firebase Cloud Storage infrastructure not available.", "error");
+        return;
+    }
+
+    try {
+        showTopRightToast("Uploading file to Firebase Cloud Storage...", "info");
+        
+        const { storage, ref, uploadBytes, getDownloadURL } = window.FortMartFirebase;
+        const cloudStorageFilePath = `chat_attachments/${Date.now()}_${singleFileReference.name}`;
+        const cloudStorageRef = ref(storage, cloudStorageFilePath);
+
+        // Execute file upload directly to Firebase Cloud Storage
+        const uploadSnapshot = await uploadBytes(cloudStorageRef, singleFileReference);
+        const firebaseStorageDownloadURL = await getDownloadURL(uploadSnapshot.ref);
+
         const transportFilePayloadConfig = {
             isFile: true,
             isImage: checkIsImageFormatCondition,
             isVideo: checkIsVideoFormatCondition,
-            fileData: readerEvent.target.result
+            fileData: firebaseStorageDownloadURL
         };
 
         if (APP_STATE.activeChatTargetUserHash === 'broadcast_personal' || APP_STATE.activeChatTargetUserHash === 'broadcast_business') {
@@ -3054,7 +3130,6 @@ function handleMessageAttachedFileSelectionEvent(inputNodeContextElement) {
         if (operationalThreadRecordData) {
             inputNodeContextElement.value = "";
 
-            // --- RETENTION POLICY UPDATE: 60 DAYS ---
             const sixtyDayRetentionHorizonMs = 60 * 24 * 60 * 60 * 1000;
             const expectedAutoDeletionDeadlineDate = new Date(Date.now() + sixtyDayRetentionHorizonMs);
 
@@ -3065,32 +3140,28 @@ function handleMessageAttachedFileSelectionEvent(inputNodeContextElement) {
                 isFile: true,
                 isImage: checkIsImageFormatCondition,
                 isVideo: checkIsVideoFormatCondition,
-                fileData: readerEvent.target.result,
+                fileData: firebaseStorageDownloadURL,
                 deletedBy: [],
                 isDeletedForAll: false,
                 autoDeleteAt: expectedAutoDeletionDeadlineDate
             };
 
-            if (window.FortMartFirebase) {
-                try {
-                    const { db, collection, addDoc, serverTimestamp } = window.FortMartFirebase;
-                    await addDoc(collection(db, "messages"), {
-                        ...messagePayload,
-                        serverTimestamp: serverTimestamp()
-                    });
-                } catch (err) {
-                    console.error("Failed writing media configuration packet payload to cloud: ", err);
-                    flagLocalTemporaryTransmissionFailure(operationalThreadRecordData, messagePayload);
-                }
-            }
+            const { db, collection, addDoc, serverTimestamp } = window.FortMartFirebase;
+            await addDoc(collection(db, "messages"), {
+                ...messagePayload,
+                serverTimestamp: serverTimestamp()
+            });
             
+            showTopRightToast("Attachment sent successfully.", "success");
         }
-    };
-    
-    fileStorageProcessingReader.readAsDataURL(singleFileReference);
+    } catch (err) {
+        console.error("Failed uploading media configuration packet payload to cloud: ", err);
+        showTopRightToast("Failed to upload attached file to Firebase Storage.", "error");
+    } finally {
+        inputNodeContextElement.value = "";
+    }
 }
 
-// --- FEATURE: FLAG LOCAL UNTRANSMITTED MESSAGE DATA IN MEMORY ---
 function flagLocalTemporaryTransmissionFailure(threadRef, basePayload) {
     const failedLocalMockId = "m_failed_" + Date.now();
     threadRef.messageLog.push({
@@ -3102,7 +3173,6 @@ function flagLocalTemporaryTransmissionFailure(threadRef, basePayload) {
     refreshMessengerActiveStreamBubblesDisplayList();
 }
 
-// --- FEATURE: MANUALLY RETRY TRANSLATING TRANSMISSIONS ---
 async function executeRetryMessageTransmissionPipeline(failedLocalMockId) {
     if (!window.FortMartFirebase || !APP_STATE.activeChatTargetUserHash) return;
     
@@ -3113,14 +3183,10 @@ async function executeRetryMessageTransmissionPipeline(failedLocalMockId) {
     if (targetFailedMemoryNodeIndex === -1) return;
     
     const clonedDataPayload = { ...operationalThreadRecordData.messageLog[targetFailedMemoryNodeIndex] };
-    
-    // Purge local identifiers before hitting Firestore engine collection clusters
     delete clonedDataPayload.mid;
     
     try {
         const { db, collection, addDoc, serverTimestamp } = window.FortMartFirebase;
-        
-        // Wipe local failed bubble before attempting write to maintain thread chronology
         operationalThreadRecordData.messageLog.splice(targetFailedMemoryNodeIndex, 1);
         
         await addDoc(collection(db, "messages"), {
@@ -3133,11 +3199,9 @@ async function executeRetryMessageTransmissionPipeline(failedLocalMockId) {
     }
 }
 
-// --- FEATURE: FIRESTORE SINGLE USER RETENTION WIPE ---
 async function executeSelectedBubbleMessagePurge(messageDocId) {
     if (!window.FortMartFirebase || !APP_STATE.currentUser) return;
     if (String(messageDocId).startsWith("m_failed_")) {
-        // Drop local failed items out of cache logs immediately
         const operationalThreadRecordData = SYSTEM_DATABASE.chats.find(c => c.dynamicParticipants.includes(APP_STATE.currentUser.uid));
         if (operationalThreadRecordData) {
             operationalThreadRecordData.messageLog = operationalThreadRecordData.messageLog.filter(m => m.mid !== messageDocId);
@@ -3158,8 +3222,7 @@ async function executeSelectedBubbleMessagePurge(messageDocId) {
     }
 }
 
-// --- FEATURE: FIRESTORE UNILATERAL BULK CLEAR CHAT ENGINE ---
-function executeWipeEntireDialogueLogsHistoryContextChain() {
+async function executeWipeEntireDialogueLogsHistoryContextChain() {
     displayConfirmationModalOverlayAction("Are you sure you want to clear this chat?", async () => {
         if (!APP_STATE.currentUser || !APP_STATE.activeChatTargetUserHash || !window.FortMartFirebase) return;
         
@@ -3168,7 +3231,6 @@ function executeWipeEntireDialogueLogsHistoryContextChain() {
         
         const { db, doc, updateDoc, arrayUnion } = window.FortMartFirebase;
         
-        // Loop through current items in thread cache to register your deletion flag onto all matching records
         for (const msg of operationalThreadRecordData.messageLog) {
             if (!String(msg.mid).startsWith("m_failed_")) {
                 try {
@@ -3184,7 +3246,6 @@ function executeWipeEntireDialogueLogsHistoryContextChain() {
     });
 }
 
-// --- FEATURE: FIRESTORE DELETE FOR ALL DISPATCH MUTATOR ---
 async function executeSelectedBubbleMessagePurgeForAll(messageDocId) {
     if (!window.FortMartFirebase) return;
     
@@ -3223,19 +3284,10 @@ function executeMessageFileDownloadTracker(messageIdentifierKey) {
     if (!operationalThreadRecordData) return;
     const exactMessagePayloadMatch = operationalThreadRecordData.messageLog.find(m => m.mid === messageIdentifierKey);
     if (exactMessagePayloadMatch && exactMessagePayloadMatch.isFile && exactMessagePayloadMatch.fileData) {
-        const structuralAnchorDownloadElement = document.createElement("a");
-        structuralAnchorDownloadElement.href = exactMessagePayloadMatch.fileData;
-        structuralAnchorDownloadElement.download = exactMessagePayloadMatch.text;
-        document.body.appendChild(structuralAnchorDownloadElement);
-        structuralAnchorDownloadElement.click();
-        document.body.removeChild(structuralAnchorDownloadElement);
+        window.open(exactMessagePayloadMatch.fileData, '_blank');
     }
 }
 
-/**
- * --- FEATURE: ADMIN BROADCAST ROUTING SYSTEM ENGINE ---
- * Writes broadcast nodes dynamically directly into the Firestore messaging context logs
- */
 async function executeSystemWideBroadcastTransmission(textPayloadString, filePackageConfigObject) {
     const targetGroupString = APP_STATE.activeChatTargetUserHash === 'broadcast_personal' ? 'personal' : 'business';
     const destinationAccountsArray = SYSTEM_DATABASE.users.filter(u => u.accountType === targetGroupString && u.uid !== 'admin');
@@ -3256,8 +3308,6 @@ async function executeSystemWideBroadcastTransmission(textPayloadString, filePac
     try {
         for (let i = 0; i < destinationAccountsArray.length; i++) {
             const profileRecord = destinationAccountsArray[i];
-            
-            // Construct target dynamic tracking combo chatId string
             const derivedChatId = `chat_admin_${profileRecord.uid}`;
             
             const broadcastPayload = {
@@ -3280,63 +3330,6 @@ async function executeSystemWideBroadcastTransmission(textPayloadString, filePac
         showTopRightToast(`Broadcast routed successfully to all ${destinationAccountsArray.length} active ${targetGroupString} profile logs.`, "success");
     } catch (err) {
         console.error("Critical block exception propagating message broadcasts: ", err);
-    }
-}
-
-/**
- * Bubble Level Action Controls Core Utilities
- */
-function executeMessageTextCopyClipboard(messageIdentifierKey) {
-    const operationalThreadRecordData = SYSTEM_DATABASE.chats.find(c => c.dynamicParticipants.includes(APP_STATE.currentUser.uid) && c.dynamicParticipants.includes(APP_STATE.activeChatTargetUserHash));
-    if (!operationalThreadRecordData) return;
-    
-    const exactMessagePayloadMatch = operationalThreadRecordData.messageLog.find(m => m.mid === messageIdentifierKey);
-    if (exactMessagePayloadMatch) {
-        navigator.clipboard.writeText(exactMessagePayloadMatch.text).catch(err => {
-            console.error("System Matrix Clipboard Exception Handling Log:", err);
-        });
-    }
-
-    showTopRightToast("Text Copied Successfully", "success");
-}
-
-async function executeSelectedBubbleMessagePurge(messageIdentifierKey) {
-    if (!window.FortMartFirebase) return;
-    const { db, doc, updateDoc, arrayUnion } = window.FortMartFirebase;
-
-    try {
-        // Appends the current user ID to the deletedBy array tracking mask on Firebase side
-        await updateDoc(doc(db, "messages", messageIdentifierKey), {
-            deletedBy: arrayUnion(APP_STATE.currentUser.uid)
-        });
-    } catch (err) {
-        console.error("Failed to flag message tracking indices as deleted: ", err);
-    }
-}
-
-async function executeSelectedBubbleMessagePurgeForAll(messageIdentifierKey) {
-    if (!window.FortMartFirebase) return;
-    const { db, doc, deleteDoc } = window.FortMartFirebase;
-
-    try {
-        await deleteDoc(doc(db, "messages", messageIdentifierKey));
-    } catch (err) {
-        console.error("Failed to execute destructive remote write on targeted atomic message: ", err);
-    }
-}
-
-function executeMessageFileDownloadTracker(messageIdentifierKey) {
-    const operationalThreadRecordData = SYSTEM_DATABASE.chats.find(c => c.dynamicParticipants.includes(APP_STATE.currentUser.uid) && c.dynamicParticipants.includes(APP_STATE.activeChatTargetUserHash));
-    if (!operationalThreadRecordData) return;
-    
-    const exactMessagePayloadMatch = operationalThreadRecordData.messageLog.find(m => m.mid === messageIdentifierKey);
-    if (exactMessagePayloadMatch && exactMessagePayloadMatch.isFile && exactMessagePayloadMatch.fileData) {
-        const structuralAnchorDownloadElement = document.createElement("a");
-        structuralAnchorDownloadElement.href = exactMessagePayloadMatch.fileData;
-        structuralAnchorDownloadElement.download = exactMessagePayloadMatch.text;
-        document.body.appendChild(structuralAnchorDownloadElement);
-        structuralAnchorDownloadElement.click();
-        document.body.removeChild(structuralAnchorDownloadElement);
     }
 }
 
@@ -3371,31 +3364,6 @@ function executeAutoReplyEvaluationProcessFrame(operationalThreadRecordData) {
             }, 1500);
         }
     }
-}
-
-async function executeWipeEntireDialogueLogsHistoryContextChain() {
-    displayConfirmationModalOverlayAction("Are you absolutely sure you want to purge all text rows entries inside this workspace log trace container? This cannot be undone.", async () => {
-        const operationalThreadRecordData = SYSTEM_DATABASE.chats.find(c => c.dynamicParticipants.includes(APP_STATE.currentUser.uid) && c.dynamicParticipants.includes(APP_STATE.activeChatTargetUserHash));
-        if(!operationalThreadRecordData || !window.FortMartFirebase) return;
-
-        const { db, collection, query, where, getDocs, doc, updateDoc, arrayUnion } = window.FortMartFirebase;
-        
-        try {
-            const targetQuery = query(collection(db, "messages"), where("chatId", "==", operationalThreadRecordData.chatId));
-            const querySnapshot = await getDocs(targetQuery);
-            
-            // Loop over documents to add user to deletedBy array tracking indicators cleanly
-            const batchPromises = [];
-            querySnapshot.forEach((docNode) => {
-                batchPromises.push(updateDoc(doc(db, "messages", docNode.id), {
-                    deletedBy: arrayUnion(APP_STATE.currentUser.uid)
-                }));
-            });
-            await Promise.all(batchPromises);
-        } catch(e) {
-            console.error("Bulk wiping routine encountered a write fault boundary layout: ", e);
-        }
-    });
 }
 
 function triggerMessageAttachedFileBrowserLink() {
