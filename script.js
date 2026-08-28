@@ -1976,7 +1976,7 @@ async function renderMarketplaceProductsDisplayLoop(forceFetch = false) {
 }
 
 /**
- * Native Share handler for product modal (Firebase Integrated)
+ * Native Share handler for product modal
  */
 async function shareProductModalDetails(productId) {
     const detailOverlayBodyNode = document.getElementById("product-detail-modal-body");
@@ -2001,94 +2001,114 @@ async function shareProductModalDetails(productId) {
     if (!product) {
         product = (SYSTEM_DATABASE.products || []).find(p => p.pid === productId) || {
             pid: productId,
-            name: "Product",
-            info: "No details specified.",
-            aiInfo: "No extra specifications specified."
+            name: "Product"
         };
     }
 
-    const FIREBASE_STORAGE_DEFAULT_PRODUCT_IMAGE = "https://firebasestorage.googleapis.com/v0/b/fort-mart.appspot.com/o/defaults%2Fproduct_placeholder.png?alt=media";
+    // 2. Create off-screen clone with enforced Desktop dimensions
+    const clone = detailOverlayBodyNode.cloneNode(true);
+    clone.style.position = "absolute";
+    clone.style.top = "-9999px";
+    clone.style.left = "-9999px";
 
-    // Helper to resolve Firebase Storage reference or fallback to raw URL
-    async function resolveFirebaseStorageUrl(imageRefOrUrl, fallbackUrl) {
-        if (!imageRefOrUrl) return fallbackUrl;
-        if (imageRefOrUrl.startsWith("http://") || imageRefOrUrl.startsWith("https://") || imageRefOrUrl.startsWith("data:")) {
-            return imageRefOrUrl;
-        }
-        try {
-            if (window.FortMartFirebase && window.FortMartFirebase.storage && window.FortMartFirebase.ref && window.FortMartFirebase.getDownloadURL) {
-                const { storage, ref, getDownloadURL } = window.FortMartFirebase;
-                const storageRef = ref(storage, imageRefOrUrl);
-                return await getDownloadURL(storageRef);
-            }
-        } catch (e) {
-            console.warn("Storage resolution warning:", e);
-        }
-        return fallbackUrl;
+    // Set fixed desktop width
+    const DESKTOP_WIDTH = 1000;
+    clone.style.width = `${DESKTOP_WIDTH}px`;
+    clone.style.backgroundColor = "#ffffff";
+    clone.style.padding = "20px";
+    clone.style.borderRadius = "8px";
+
+    // 3. UI Cleanup on clone
+    const headerTitle = clone.querySelector("h3");
+    if (headerTitle) headerTitle.textContent = "Product Details - Fort Mart";
+
+    const closeBtn = clone.querySelector(".modal-expanded-header-row button");
+    if (closeBtn) closeBtn.remove();
+
+    const actionsFooter = clone.querySelector(".modal-expanded-actions-footer-row");
+    if (actionsFooter) actionsFooter.remove();
+
+    const adminControls = clone.querySelector("div[style*='border: 1px dashed'], .admin-controls-hub-box");
+    if (adminControls) adminControls.remove();
+
+    const leftColumn = clone.querySelector(".expanded-left-visuals-column");
+    if (leftColumn) {
+        const visitTag = document.createElement("div");
+        visitTag.style.marginTop = "15px";
+        visitTag.style.fontWeight = "bold";
+        visitTag.style.color = "var(--fort-blue-dark, #1a365d)";
+        visitTag.style.fontSize = "14px";
+        visitTag.textContent = "Visit mart.fort-site.com.ng";
+        leftColumn.appendChild(visitTag);
     }
 
+    document.body.appendChild(clone);
+
     try {
-        // 2. Resolve image source (DOM target fallback to product metadata)
-        const DOMProductImg = detailOverlayBodyNode.querySelector(".expanded-master-image-box img");
-        let rawImageUrl = DOMProductImg ? DOMProductImg.src : product.coverPhoto;
-        const finalImageUrl = await resolveFirebaseStorageUrl(rawImageUrl, FIREBASE_STORAGE_DEFAULT_PRODUCT_IMAGE);
+        // Load html2canvas if needed
+        if (typeof html2canvas === "undefined") {
+            await new Promise((resolve, reject) => {
+                const script = document.createElement("script");
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
 
-        // 3. Download product image into memory as Blob/File
-        const imageResponse = await fetch(finalImageUrl, { mode: 'cors' });
-        const imageBlob = await imageResponse.blob();
-        
-        const productSlug = typeof createProductSlug === "function" 
-            ? createProductSlug(product.name) 
-            : product.name.toLowerCase().replace(/\s+/g, '-');
+        // Generate canvas forced at desktop viewport size
+        const canvas = await html2canvas(clone, { 
+            useCORS: true, 
+            logging: false,
+            width: DESKTOP_WIDTH,
+            windowWidth: 1200
+        });
+        document.body.removeChild(clone);
 
+        // 4. Store image blob directly in client browser memory/cache
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const productSlug = typeof createProductSlug === "function" ? createProductSlug(product.name) : product.name.toLowerCase().replace(/\s+/g, '-');
         const imageFileName = `${productSlug}.png`;
-        const imageFile = new File([imageBlob], imageFileName, { type: imageBlob.type || 'image/png' });
+        
+        // Native file created in local RAM cache
+        const imageFile = new File([blob], imageFileName, { type: 'image/png' });
 
-        // 4. Build text body with complete details & specs
         const shareUrl = `${window.location.origin}${window.location.pathname}?product=${productSlug}&pid=${product.pid}`;
-        const currencySymbol = (APP_STATE.currentUser && APP_STATE.currentUser.country === 'Nigeria') ? '₦' : '$';
+        const shareText = `${shareUrl}\n${product.name} | Fort Mart\nThis product was shared from Fort Mart - mart.fort-site.com.ng`;
 
-        const shareText = 
-`${product.name} | Fort Mart
-Price: ${currencySymbol}${product.price ? parseFloat(product.price).toLocaleString() : 'N/A'}
-
-Description:
-${product.info || 'No details specified.'}
-
-Specifications:
-${product.aiInfo || 'No extra specifications specified.'}
-
-Link: ${shareUrl}
-Shared via Fort Mart - mart.fort-site.com.ng`;
-
-        // 5. Trigger native share passing product image file
+        // 5. Trigger native share passing cached file
         if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+            // Directly attaches the cached image file to WhatsApp, Messenger, etc.
             await navigator.share({
                 title: `${product.name} | Fort Mart`,
                 text: shareText,
                 files: [imageFile]
             });
         } else if (navigator.share) {
+            // Share URL text if file array sharing isn't supported by the client OS
             await navigator.share({
                 title: `${product.name} | Fort Mart`,
                 text: shareText,
                 url: shareUrl
             });
         } else {
-            // Desktop fallback: Copy text to clipboard and download image
+            // Fallback for desktop browsers: Copy text & trigger direct browser download from Blob cache
             await navigator.clipboard.writeText(shareText);
 
             const downloadLink = document.createElement("a");
-            downloadLink.href = URL.createObjectURL(imageBlob);
+            downloadLink.href = URL.createObjectURL(blob);
             downloadLink.download = imageFileName;
             document.body.appendChild(downloadLink);
             downloadLink.click();
             document.body.removeChild(downloadLink);
             URL.revokeObjectURL(downloadLink.href);
 
-            alert("Product details copied to clipboard and product image downloaded!");
+            alert("Share details copied to clipboard and product specification image saved!");
         }
     } catch (error) {
+        if (document.body.contains(clone)) {
+            document.body.removeChild(clone);
+        }
         console.error("Error executing share pipeline:", error);
     }
 }
